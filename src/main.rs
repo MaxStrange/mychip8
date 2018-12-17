@@ -52,11 +52,17 @@ fn main() {
     }
 
     // Create and initialize a Chip 8 instance
-    let emu = chip8::Chip8::new();
+    let mut emu = chip8::Chip8::new();
 
     // Load the program into memory
-    // TODO
+    match emu.load(&binary) {
+        Ok(()) => (),
+        Err(s) => {
+            println!("Could not load binary: {}", s);
+            process::exit(3);
+        },
+    }
 
     // Hand over control to the emulator
-    // TODO
+    emu.run();
 }
