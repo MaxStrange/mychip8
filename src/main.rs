@@ -7,6 +7,7 @@ mod emulator;
 /* Uses */
 use self::emulator::chip8;
 use std::fs;
+use std::io::Read;
 use std::path;
 use std::process;
 
@@ -32,17 +33,30 @@ fn main() {
         process::exit(1);
     }
 
-    let binary = match fs::File::open(progpath) {
+    // Load the contents from the file
+    let mut contents = match fs::File::open(progpath) {
         Ok(b) => b,
         Err(e) => {
             println!("Problem opening file at location {}: {:?}", progpath.to_str().unwrap(), e);
             process::exit(2);
-        }
+        },
     };
 
+    // Read the contents into a bufer of bytes
+    let mut binary = Vec::<u8>::new();
+    match contents.read_to_end(&mut binary) {
+        Ok(_nbytes) => (),
+        Err(e) => {
+            println!("Could not read the contents of the file into a vector: {:?}", e);
+        },
+    }
+
     // Create and initialize a Chip 8 instance
+    let emu = chip8::Chip8::new();
 
     // Load the program into memory
+    // TODO
 
     // Hand over control to the emulator
+    // TODO
 }
