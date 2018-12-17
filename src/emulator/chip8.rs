@@ -69,9 +69,15 @@ impl Chip8 {
             let instruction: u16 = ((msb as u16) << 8) | (lsb as u16);
 
             // Decode opcode
-            let opcode = Opcode::new(instruction);
+            let opcode = match Opcode::new(instruction) {
+                Ok(o) => o,
+                Err(msg) => {
+                    panic!("Problem with instruction {:x}: {}", instruction, msg)
+                },
+            };
 
             // Execute instruction
+            // TODO
         }
     }
 }

@@ -70,102 +70,102 @@ pub enum Opcode {
 }
 
 impl Opcode {
-    pub fn new(instruction: u16) -> Self {
+    pub fn new(instruction: u16) -> Result<Self, String> {
         match instruction & 0x8000 {
             0x0000 => {
                 if instruction == 0x00E0 {
-                    Opcode::CLS
+                    Ok(Opcode::CLS)
                 } else if instruction == 0x00EE {
-                    Opcode::RET
+                    Ok(Opcode::RET)
                 } else {
-                    Opcode::SYS(instruction & 0x0FFF)
+                    Ok(Opcode::SYS(instruction & 0x0FFF))
                 }
             },
             0x1000 => {
-                Opcode::JP(instruction & 0x0FFF)
+                Ok(Opcode::JP(instruction & 0x0FFF))
             },
             0x2000 => {
-                Opcode::CALL(instruction & 0x0FFF)
+                Ok(Opcode::CALL(instruction & 0x0FFF))
             },
             0x3000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let kk: u8 = (instruction & 0x00FF) as u8;
-                Opcode::SEVxByte(x, kk)
+                Ok(Opcode::SEVxByte(x, kk))
             },
             0x4000 => {
-                panic!("Instruction {:x} is not valid!", instruction);
+                Err("0x4 is an invalid opcode.".to_string())
             },
             0x5000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let y: u8 = ((instruction & 0x00F0) >> 4) as u8;
-                Opcode::SEVxVy(x, y)
+                Ok(Opcode::SEVxVy(x, y))
             },
             0x6000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let kk: u8 = (instruction & 0x00FF) as u8;
-                Opcode::LDVxByte(x, kk)
+                Ok(Opcode::LDVxByte(x, kk))
             },
             0x7000 => {
-                panic!("Instruction {:x} is not valid!", instruction);
+                Err("0x7 is an invalid opcode.".to_string())
             },
             0x8000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let y: u8 = ((instruction & 0x00F0) >> 4) as u8;
                 match instruction & 0x000F {
-                    0x0001 => Opcode::ORVxVy(x, y),
-                    0x0002 => Opcode::ANDVxVy(x, y),
-                    0x0003 => Opcode::XORVxVy(x, y),
-                    0x0004 => Opcode::ADDVxVy(x, y),
-                    0x0005 => Opcode::SUBVxVy(x, y),
-                    0x0006 => Opcode::SHRVx(x),
-                    0x0007 => Opcode::SUBNVxVy(x, y),
-                    0x000E => Opcode::SHLVx(x),
-                    _ => panic!("Instruction {:x} is not valid!", instruction),
+                    0x0001 => Ok(Opcode::ORVxVy(x, y)),
+                    0x0002 => Ok(Opcode::ANDVxVy(x, y)),
+                    0x0003 => Ok(Opcode::XORVxVy(x, y)),
+                    0x0004 => Ok(Opcode::ADDVxVy(x, y)),
+                    0x0005 => Ok(Opcode::SUBVxVy(x, y)),
+                    0x0006 => Ok(Opcode::SHRVx(x)),
+                    0x0007 => Ok(Opcode::SUBNVxVy(x, y)),
+                    0x000E => Ok(Opcode::SHLVx(x)),
+                    _ => Err("0x8 is a valid opcode but the submask is not.".to_string()),
                 }
             },
             0x9000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let y: u8 = ((instruction & 0x00F0) >> 4) as u8;
-                Opcode::SNEVxVy(x, y)
+                Ok(Opcode::SNEVxVy(x, y))
             },
             0xA000 => {
-                Opcode::LDIAddr(instruction & 0x0FFF)
+                Ok(Opcode::LDIAddr(instruction & 0x0FFF))
             },
             0xB000 => {
-                Opcode::JPV0Addr(instruction & 0x0FFF)
+                Ok(Opcode::JPV0Addr(instruction & 0x0FFF))
             },
             0xC000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let kk: u8 = (instruction & 0x00FF) as u8;
-                Opcode::RNDVxByte(x, kk)
+                Ok(Opcode::RNDVxByte(x, kk))
             },
             0xD000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let y: u8 = ((instruction & 0x00F0) >> 4) as u8;
                 let n: u8 = (instruction & 0x000F) as u8;
-                Opcode::DRWVxVyNibble(x, y, n)
+                Ok(Opcode::DRWVxVyNibble(x, y, n))
             },
             0xE000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 match instruction & 0x00FF {
-                    0x009E => Opcode::SKPVx(x),
-                    0x00A1 => Opcode::SKNPVx(x),
-                    _ => panic!("Instruction {:x} is not valid!", instruction),
+                    0x009E => Ok(Opcode::SKPVx(x)),
+                    0x00A1 => Ok(Opcode::SKNPVx(x)),
+                    _ => Err("0xE is a valid opcode, but the submask is not.".to_string()),
                 }
             },
             0xF000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 match instruction & 0x00FF {
-                    0x0007 => Opcode::LDVxDT(x),
-                    0x000A => Opcode::LDVxK(x),
-                    0x0015 => Opcode::LDDTVx(x),
-                    0x0018 => Opcode::LDSTVx(x),
-                    0x001E => Opcode::ADDIVx(x),
-                    0x0029 => Opcode::LDFVx(x),
-                    0x0033 => Opcode::LDBVx(x),
-                    0x0055 => Opcode::LDIVx(x),
-                    0x0065 => Opcode::LDVxI(x),
-                    _ => panic!("Instruction {:x} is not valid!", instruction),
+                    0x0007 => Ok(Opcode::LDVxDT(x)),
+                    0x000A => Ok(Opcode::LDVxK(x)),
+                    0x0015 => Ok(Opcode::LDDTVx(x)),
+                    0x0018 => Ok(Opcode::LDSTVx(x)),
+                    0x001E => Ok(Opcode::ADDIVx(x)),
+                    0x0029 => Ok(Opcode::LDFVx(x)),
+                    0x0033 => Ok(Opcode::LDBVx(x)),
+                    0x0055 => Ok(Opcode::LDIVx(x)),
+                    0x0065 => Ok(Opcode::LDVxI(x)),
+                    _ => Err("0xF is a valid opcode, but the submask is not.".to_string()),
                 }
             },
             _ => panic!("It should be impossible to even get here..."),
