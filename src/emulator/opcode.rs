@@ -1,5 +1,6 @@
 /// Opcodes
 
+#[derive(Debug, Clone, Copy)]
 pub enum Opcode {
     /// 0x0nnn: Jump to a machine code routine at nnn.
     SYS(u16),
