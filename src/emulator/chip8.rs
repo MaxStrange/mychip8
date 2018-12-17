@@ -1,4 +1,5 @@
-use super::register::Register;
+use super::opcode::Opcode;
+use super::register::{Register, RegisterArray};
 use std::fmt::Write;
 
 /// The length of our RAM in bytes
@@ -15,7 +16,7 @@ pub struct Chip8 {
     /// 0x0200 to 0x0FFF is where the ROM will be loaded and scratch space for the program
     memory: [u8; MEMORY_LENGTH_NBYTES],
     /// The Chip-8 has 15 1-byte general purpose registers and one that is used as a carry flag.
-    registers: [Register; 16],
+    registers:  RegisterArray,
     /// Program counter
     pc: u16,
     /// Special index register - generally used to store memory addresses
@@ -31,24 +32,7 @@ impl Chip8 {
     pub fn new() -> Self {
         Chip8 {
             memory: [0u8; MEMORY_LENGTH_NBYTES],
-            registers: [
-                Register::V0(0),
-                Register::V1(0),
-                Register::V2(0),
-                Register::V3(0),
-                Register::V4(0),
-                Register::V5(0),
-                Register::V6(0),
-                Register::V7(0),
-                Register::V8(0),
-                Register::V9(0),
-                Register::VA(0),
-                Register::VB(0),
-                Register::VC(0),
-                Register::VD(0),
-                Register::VE(0),
-                Register::VF(0),
-            ],
+            registers: RegisterArray::new(),
             pc: 0,
             index: 0,
             sp: 0,
@@ -80,7 +64,13 @@ impl Chip8 {
     pub fn run(&mut self) -> ! {
         loop {
             // Fetch an instruction with pc
+            let msb = self.memory[self.pc as usize];
+            let lsb = self.memory[(self.pc + 1) as usize];
+            let instruction: u16 = ((msb as u16) << 8) | (lsb as u16);
+
             // Decode opcode
+            let opcode = Opcode::new(instruction);
+
             // Execute instruction
         }
     }

@@ -4,4 +4,5 @@
 pub mod chip8;
 
 /* Internal Mods */
+mod opcode;
 mod register;
