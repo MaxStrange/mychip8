@@ -14,10 +14,16 @@ pub enum Opcode {
     CALL(u16),
     /// 0x3xkk: Skip next instruction if Vx == kk; compare register Vx to kk. If equal, increment PC by 2.
     SEVxByte(u8, u8),
+    /// 0x4xkk: Skip next instruction i Vx != kk.
+    SNEVxByte(u8, u8),
     /// 0x5xy0: Skip next instruction if Vx == Vy; compare register Vx to register Vy. If equal, increment PC by 2.
     SEVxVy(u8, u8),
-    /// 0x6xkk: Store the value of register Vy in register Vx.
+    /// 0x6xkk: Put kk into register Vx.
     LDVxByte(u8, u8),
+    /// 0x7xkk: Add the value kk to the value of regsiter Vx, then store the result in Vx.
+    ADDVxByte(u8, u8),
+    /// 0x6xkk: Store the value of register Vy in register Vx.
+    LDVxVy(u8, u8),
     /// 0x8xy1: Bitwise OR Vx and Vy, then store the result in Vx.
     ORVxVy(u8, u8),
     /// 0x8xy2: Bitwise AND Vx and Vy, then store the result in Vx.
@@ -107,7 +113,9 @@ impl Opcode {
                 Ok(Opcode::LDVxByte(x, kk))
             },
             0x7000 => {
-                Err("0x7 is an invalid opcode.".to_string())
+                let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
+                let kk: u8 = (instruction & 0x00FF) as u8;
+                Ok(Opcode::ADDVxByte(x, kk))
             },
             0x8000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;

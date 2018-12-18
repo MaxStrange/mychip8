@@ -91,130 +91,268 @@ impl Chip8 {
         }
     }
 
-    fn execute_sys(&mut self, addr: Address) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+    /// Executes a SYS instruction.
+    ///
+    /// The SYS instruction jumps to a machine code routine at the given address.
+    /// This instruction is only used on the old computers on which Chip-8 was originally
+    /// implemented. It is ignored by modern interpreters.
+    fn execute_sys(&mut self, _addr: Address) -> Result<(), String> {
+        // Does nothing - NOP
+        Ok(())
     }
 
+    /// Executes a CLS instruction.
+    ///
+    /// Clears the display.
     fn execute_cls(&mut self) -> Result<(), String> {
+        // TODO
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes a RET instruction.
+    ///
+    /// Sets the program counter to the address at the top of the stack,
+    /// then subtracts one from the stack pointer.
     fn execute_ret(&mut self) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes a JP instruction.
+    ///
+    /// Sets the program counter to the given address.
     fn execute_jp(&mut self, addr: Address) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes a CALL instruction.
+    ///
+    /// Increments the stack pointer, puts the current program counter on top of the stack,
+    /// then sets the program counter to the given address.
     fn execute_call(&mut self, addr: Address) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes an SE instruction on register `x` and byte `byte`.
+    ///
+    /// If the contents of register Vx equal `byte`, the program counter is incremented
+    /// by 2 (in other words, we skip the next instruction).
     fn execute_sevxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes an SNE instruction on register `x` and byte `byte`.
+    ///
+    /// If the contents of register Vx do NOT equal `byte`, the program counter is incremented
+    /// by 2 (in other words, we skip the next instruction).
     fn execute_sevxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes an LD instruction on register `x` and byte `byte`.
+    ///
+    /// Stores the given byte in register `x`.
     fn execute_ldvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes an ADD instruction on register `x` and byte `byte`.
+    ///
+    /// Adds the value `byte` to the contents of register Vx, then stores the result in Vx.
+    fn execute_addvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
+        Err("Not yet implemented.".to_string())
+    }
+
+    /// Executes an LD instruction on registers `x` and `y`.
+    ///
+    /// Stores the value of register Vy in register Vx.
+    fn execute_ldvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+        Err("Not yet implemented.".to_string())
+    }
+
+    /// Executes an OR instruction on registers `x` and `y`.
+    ///
+    /// Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
     fn execute_orvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes an AND instruction on registers `x` and `y`.
+    ///
+    /// Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
     fn execute_andvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes an XOR instruction on registers `x` and `y`.
+    ///
+    /// Performs a bitwise XOR on the values of Vx and Vy, then stores the result in Vx.
     fn execute_xorvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes an ADD instruction on registers `x` and `y`.
+    ///
+    /// Adds the value in the register `y` to the value of register `x`, then stores the result in register `x`.
+    /// If the result is greater than 255, VF is set to 1, otherwise it is set to 0.
+    /// Only the lowest 8 bits are stored in Vx.
     fn execute_addvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented".to_string())
     }
 
+    /// Executes a SUB instruction on registers `x` and `y`.
+    ///
+    /// If Vx > Vy, then VF is set to 1, otherwise set it to 0. Then Vy is subtracted from Vx
+    /// and the result is stored in Vx.
     fn execute_subvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a SHR instruction on register `x`.
+    ///
+    /// If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is
+    /// bit shifted right by one (in other words, Vx is divided by 2).
     fn execute_shrvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a SUBN instruction on registers `x` and `y`.
+    ///
+    /// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy
+    /// and the result is stored in Vx.
     fn execute_subnvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a SHL instruction on register `x`.
+    ///
+    /// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is shifted
+    /// left by one bit (in other words, Vx is multiplied by 2).
     fn execute_shlvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes an SNE instruction on registers `x` and `y`.
+    ///
+    /// The values of Vx and Vy are compared and if they are NOT equal, the program counter is
+    /// incremented by 2.
     fn execute_snevxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes an LD instruction on register I and `addr`.
+    ///
+    /// The value of regsiter I is set to the value at RAM address `addr`.
     fn execute_ldiaddr(&mut self, addr: Address) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a JP instruction on V0 and `addr`.
+    ///
+    /// The program counter is set to `addr` plus the value of V0.
     fn execute_jpv0addr(&mut self, addr: Address) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a RND instruction on `x` and byte `byte`.
+    ///
+    /// Generate a random number in the interval [0, 255], which is then ANDed with the value
+    /// `byte`. The results are stored in Vx.
     fn execute_rndvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a DRW instruction on registers `x` and `y` and nibble `byte`.
+    ///
+    /// Read `byte` bytes from memory, starting at the address stored in I. These bytes are then
+    /// displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing
+    /// screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0.
+    /// If the sprite is positioned so part of it is outside the coordinates of the display, it wraps
+    /// around to the opposite side of the screen.
     fn execute_drwvxvynibble(&mut self, x: Register, y: Register, byte: u8) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a SKP instruction on register `x`.
+    ///
+    /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
+    /// in the down position, the program counter is increased by 2.
     fn execute_skpvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a SKNP instruction on register `x`.
+    ///
+    /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
+    /// in the up position, the program counter is increased by 2.
     fn execute_sknpvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a LD instruction on register `x` from the delay timer.
+    ///
+    /// The value of the delay timer is placed into Vx.
     fn execute_ldvxdt(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a LD instruction on register `x` from a key press.
+    ///
+    /// All execution stops until a key is pressed, then the value of that key
+    /// is stored in Vx.
     fn execute_ldvxk(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
-    fn execute_lddtv(&mut self, x: Register) -> Result<(), String> {
+    /// Executes a LD instruction on the delay timer and register `x`.
+    ///
+    /// The delay timer is set equal to the value of Vx.
+    fn execute_lddtvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes a LD instruction on the sound timer and register `x`.
+    ///
+    /// The sound timer is set to the value of Vx.
     fn execute_ldstvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes an ADD instruction on I and `x`.
+    ///
+    /// The values of I and Vx are added, and the result is stored in I.
     fn execute_addivx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes an sprite LD instruction.
+    ///
+    /// The value of I is set to the location of the hexadecimal sprite
+    /// corresponding to the value of Vx.
     fn execute_ldfvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes an BCD LD instruction.
+    ///
+    /// Takes the decimal value of Vx and places the hundreds digit in
+    /// memory at location I, the tens digit at location I+1, and the
+    /// ones digit at location I+2.
     fn execute_ldbvx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes an array LD instruction.
+    ///
+    /// Copies the values of registers V0 through Vx into memory,
+    /// starting at the address in I.
     fn execute_ldivx(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
 
+    /// Executes an array LD instruction.
+    ///
+    /// Reads values from memory starting at location I into
+    /// registers V0 through Vx.
     fn execute_ldvxi(&mut self, x: Register) -> Result<(), String> {
         Err("Not yet implemented.".to_string())
     }
@@ -227,8 +365,11 @@ impl Chip8 {
             Opcode::JP(addr) => self.execute_jp(addr),
             Opcode::CALL(addr) => self.execute_call(addr),
             Opcode::SEVxByte(x, kk) => self.execute_sevxbyte(x, kk),
+            Opcode::SNEVxByte(x, kk) => self.execute_snevxvy(x, kk),
             Opcode::SEVxVy(x, y) => self.execute_sevxvy(x, y),
             Opcode::LDVxByte(x, kk) => self.execute_ldvxbyte(x, kk),
+            Opcode::ADDVxByte(x, kk) => self.execute_addvxbyte(x, kk),
+            Opcode::LDVxVy(x, y) => self.execute_ldvxvy(x, y),
             Opcode::ORVxVy(x, y) => self.execute_orvxvy(x, y),
             Opcode::ANDVxVy(x, y) => self.execute_andvxvy(x, y),
             Opcode::XORVxVy(x, y) => self.execute_xorvxvy(x, y),
@@ -246,7 +387,7 @@ impl Chip8 {
             Opcode::SKNPVx(x) => self.execute_sknpvx(x),
             Opcode::LDVxDT(x) => self.execute_ldvxdt(x),
             Opcode::LDVxK(x) => self.execute_ldvxk(x),
-            Opcode::LDDTVx(x) => self.execute_lddtv(x),
+            Opcode::LDDTVx(x) => self.execute_lddtvx(x),
             Opcode::LDSTVx(x) => self.execute_ldstvx(x),
             Opcode::ADDIVx(x) => self.execute_addivx(x),
             Opcode::LDFVx(x) => self.execute_ldfvx(x),
