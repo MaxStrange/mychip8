@@ -4,37 +4,37 @@ pub type Register = u8;
 /// All the registers in the system.
 pub struct RegisterArray {
     /// V0 - a general purpose register
-    v0: Register,
+    pub v0: Register,
     /// V1 - a general purpose register
-    v1: Register,
+    pub v1: Register,
     /// V2 - a general purpose register
-    v2: Register,
+    pub v2: Register,
     /// V3 - a general purpose register
-    v3: Register,
+    pub v3: Register,
     /// V4 - a general purpose register
-    v4: Register,
+    pub v4: Register,
     /// V5 - a general purpose register
-    v5: Register,
+    pub v5: Register,
     /// V6 - a general purpose register
-    v6: Register,
+    pub v6: Register,
     /// V7 - a general purpose register
-    v7: Register,
+    pub v7: Register,
     /// V8 - a general purpose register
-    v8: Register,
+    pub v8: Register,
     /// V9 - a general purpose register
-    v9: Register,
+    pub v9: Register,
     /// VA - a general purpose register
-    va: Register,
+    pub va: Register,
     /// VB - a general purpose register
-    vb: Register,
+    pub vb: Register,
     /// VC - a general purpose register
-    vc: Register,
+    pub vc: Register,
     /// VD - a general purpose register
-    vd: Register,
+    pub vd: Register,
     /// VE - a general purpose register
-    ve: Register,
+    pub ve: Register,
     /// VF - The only non-general purpose register in this struct. Used for carry bits mostly.
-    vf: Register,
+    pub vf: Register,
 }
 
 impl RegisterArray {

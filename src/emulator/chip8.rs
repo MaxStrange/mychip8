@@ -161,36 +161,101 @@ impl Chip8 {
     /// If the contents of register Vx equal `byte`, the program counter is incremented
     /// by 2 (in other words, we skip the next instruction).
     fn execute_sevxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        if vx == byte {
+            self.pc += 2;
+        }
+
+        Ok(())
     }
 
     /// Executes an SNE instruction on register `x` and byte `byte`.
     ///
     /// If the contents of register Vx do NOT equal `byte`, the program counter is incremented
     /// by 2 (in other words, we skip the next instruction).
+    fn execute_snevxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
+        let vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        if vx != byte {
+            self.pc += 2;
+        }
+
+        Ok(())
+    }
+    /// Executes an SNE instruction on registers `x` and `y`.
+    ///
+    /// The values of Vx and Vy are compared and if they are equal, the program counter is
+    /// incremented by 2.
     fn execute_sevxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        if vx == vy {
+            self.pc += 2;
+        }
+
+        Ok(())
     }
 
     /// Executes an LD instruction on register `x` and byte `byte`.
     ///
     /// Stores the given byte in register `x`.
     fn execute_ldvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = byte;
+
+        Ok(())
     }
 
     /// Executes an ADD instruction on register `x` and byte `byte`.
     ///
     /// Adds the value `byte` to the contents of register Vx, then stores the result in Vx.
     fn execute_addvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx += byte;
+
+        Ok(())
     }
 
     /// Executes an LD instruction on registers `x` and `y`.
     ///
     /// Stores the value of register Vy in register Vx.
     fn execute_ldvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = vy;
+
+        Ok(())
     }
 
     /// Executes an OR instruction on registers `x` and `y`.
@@ -389,7 +454,7 @@ impl Chip8 {
             Opcode::JP(addr) => self.execute_jp(addr),
             Opcode::CALL(addr) => self.execute_call(addr),
             Opcode::SEVxByte(x, kk) => self.execute_sevxbyte(x, kk),
-            Opcode::SNEVxByte(x, kk) => self.execute_snevxvy(x, kk),
+            Opcode::SNEVxByte(x, kk) => self.execute_snevxbyte(x, kk),
             Opcode::SEVxVy(x, y) => self.execute_sevxvy(x, y),
             Opcode::LDVxByte(x, kk) => self.execute_ldvxbyte(x, kk),
             Opcode::ADDVxByte(x, kk) => self.execute_addvxbyte(x, kk),
@@ -418,6 +483,33 @@ impl Chip8 {
             Opcode::LDBVx(x) => self.execute_ldbvx(x),
             Opcode::LDIVx(x) => self.execute_ldivx(x),
             Opcode::LDVxI(x) => self.execute_ldvxi(x),
+        }
+    }
+
+    /// Returns a mutable reference to the specified register if it exists.
+    fn get_register<'a>(&'a mut self, v: Register) -> Result<&'a mut Register, String> {
+        match v {
+            0 => Ok(&mut self.registers.v0),
+            1 => Ok(&mut self.registers.v1),
+            2 => Ok(&mut self.registers.v2),
+            3 => Ok(&mut self.registers.v3),
+            4 => Ok(&mut self.registers.v4),
+            5 => Ok(&mut self.registers.v5),
+            6 => Ok(&mut self.registers.v6),
+            7 => Ok(&mut self.registers.v7),
+            8 => Ok(&mut self.registers.v8),
+            9 => Ok(&mut self.registers.v9),
+            10 => Ok(&mut self.registers.va),
+            11 => Ok(&mut self.registers.vb),
+            12 => Ok(&mut self.registers.vc),
+            13 => Ok(&mut self.registers.vd),
+            14 => Ok(&mut self.registers.ve),
+            15 => Ok(&mut self.registers.vf),
+            _ => {
+                let mut msg = String::new();
+                write!(msg, "Register {} does not exist.", v).unwrap();
+                Err(msg)
+            },
         }
     }
 }
