@@ -114,14 +114,29 @@ impl Chip8 {
     /// Sets the program counter to the address at the top of the stack,
     /// then subtracts one from the stack pointer.
     fn execute_ret(&mut self) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        if self.sp as usize >= self.stack.len() {
+            let mut errmsg = String::new();
+            write!(errmsg, "Stack pointer ({}) is too big.", self.sp).unwrap();
+            Err(errmsg)
+        } else {
+            self.pc = self.stack[self.sp as usize];
+            self.sp -= 1;
+            Ok(())
+        }
     }
 
     /// Executes a JP instruction.
     ///
     /// Sets the program counter to the given address.
     fn execute_jp(&mut self, addr: Address) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        if addr as usize >= self.memory.len() {
+            let mut errmsg = String::new();
+            write!(errmsg, "Address {} is larger than the memory.", addr).unwrap();
+            Err(errmsg)
+        } else {
+            self.pc = self.memory[addr as usize] as u16;
+            Ok(())
+        }
     }
 
     /// Executes a CALL instruction.
@@ -129,7 +144,16 @@ impl Chip8 {
     /// Increments the stack pointer, puts the current program counter on top of the stack,
     /// then sets the program counter to the given address.
     fn execute_call(&mut self, addr: Address) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        if (self.sp + 1) as usize >= self.stack.len() {
+            let mut errmsg = String::new();
+            write!(errmsg, "Stack pointer ({}) is greater than the length of the stack.", self.sp).unwrap();
+            Err(errmsg)
+        } else {
+            self.sp += 1;
+            self.stack[self.sp as usize] = self.pc;
+            self.pc = addr;
+            Ok(())
+        }
     }
 
     /// Executes an SE instruction on register `x` and byte `byte`.
