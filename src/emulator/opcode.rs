@@ -14,7 +14,7 @@ pub enum Opcode {
     CALL(u16),
     /// 0x3xkk: Skip next instruction if Vx == kk; compare register Vx to kk. If equal, increment PC by 2.
     SEVxByte(u8, u8),
-    /// 0x4xkk: Skip next instruction i Vx != kk.
+    /// 0x4xkk: Skip next instruction if Vx != kk.
     SNEVxByte(u8, u8),
     /// 0x5xy0: Skip next instruction if Vx == Vy; compare register Vx to register Vy. If equal, increment PC by 2.
     SEVxVy(u8, u8),
@@ -22,7 +22,7 @@ pub enum Opcode {
     LDVxByte(u8, u8),
     /// 0x7xkk: Add the value kk to the value of regsiter Vx, then store the result in Vx.
     ADDVxByte(u8, u8),
-    /// 0x6xkk: Store the value of register Vy in register Vx.
+    /// 0x8xy0: Store the value of register Vy in register Vx.
     LDVxVy(u8, u8),
     /// 0x8xy1: Bitwise OR Vx and Vy, then store the result in Vx.
     ORVxVy(u8, u8),
@@ -100,7 +100,9 @@ impl Opcode {
                 Ok(Opcode::SEVxByte(x, kk))
             },
             0x4000 => {
-                Err("0x4 is an invalid opcode.".to_string())
+                let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
+                let kk: u8 = (instruction & 0x00FF) as u8;
+                Ok(Opcode::SNEVxByte(x, kk))
             },
             0x5000 => {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
@@ -121,6 +123,7 @@ impl Opcode {
                 let x: u8 = ((instruction & 0x0F00) >> 8) as u8;
                 let y: u8 = ((instruction & 0x00F0) >> 4) as u8;
                 match instruction & 0x000F {
+                    0x0000 => Ok(Opcode::LDVxVy(x, y)),
                     0x0001 => Ok(Opcode::ORVxVy(x, y)),
                     0x0002 => Ok(Opcode::ANDVxVy(x, y)),
                     0x0003 => Ok(Opcode::XORVxVy(x, y)),
