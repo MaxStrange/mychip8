@@ -4,6 +4,7 @@ pub type Register = u8;
 /// The number of registers in this struct.
 const NUM_REGISTERS: usize = 16;
 
+#[derive(Debug)]
 /// All the registers in the system.
 pub struct RegisterArray {
     /// V0 - a general purpose register

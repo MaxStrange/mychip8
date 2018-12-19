@@ -1,7 +1,7 @@
 use super::opcode::Opcode;
 use super::rand::prelude::*;
 use super::register::{Register, RegisterArray};
-use std::fmt::Write;
+use std::fmt::{self, Write};
 
 /// The length of our RAM in bytes
 const MEMORY_LENGTH_NBYTES: usize = 4096;
@@ -31,6 +31,24 @@ pub struct Chip8 {
     sp: u8,
     /// The stack is implemented as its own array of 16 16-bit values, rather than just a section of RAM
     stack: [u16; STACK_SIZE_N_ADDRS],
+}
+
+impl fmt::Debug for Chip8 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "Registers: {:?}", self.registers)?;
+        writeln!(f, "PC: {}", self.pc)?;
+        writeln!(f, "I: {}", self.index)?;
+        writeln!(f, "SP: {}", self.sp)?;
+        writeln!(f, "Stack:")?;
+        for (idx, item) in self.stack.iter().enumerate() {
+            writeln!(f, "  {}: {:x}", idx, item)?;
+        }
+        writeln!(f, "Sample of memory (0x0210 to 0x021F):")?;
+        for i in 0x0210..=0x021F {
+            writeln!(f, "  {:x}: {:x}", i, self.memory[i])?;
+        }
+        Ok(())
+    }
 }
 
 impl Chip8 {
@@ -78,7 +96,7 @@ impl Chip8 {
             let opcode = match Opcode::new(instruction) {
                 Ok(o) => o,
                 Err(msg) => {
-                    panic!("Problem with instruction {:x}: {}", instruction, msg)
+                    panic!("Problem with instruction {:x}: {}. State of us: {:?}", instruction, msg, self)
                 },
             };
 
@@ -86,7 +104,7 @@ impl Chip8 {
             match self.execute(opcode) {
                 Ok(()) => (),
                 Err(msg) => {
-                    panic!("Problem executing instruction {:?}: {}", opcode, msg)
+                    panic!("Problem executing instruction {:?}: {}. State of us: {:?}", opcode, msg, self)
                 },
             }
         }
