@@ -1,4 +1,5 @@
 use super::opcode::Opcode;
+use super::rand::prelude::*;
 use super::register::{Register, RegisterArray};
 use std::fmt::Write;
 
@@ -500,7 +501,17 @@ impl Chip8 {
     /// Generate a random number in the interval [0, 255], which is then ANDed with the value
     /// `byte`. The results are stored in Vx.
     fn execute_rndvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let mut rng = thread_rng();
+        let result = byte & rng.gen_range(0, 256) as u8;
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = result;
+
+        Ok(())
     }
 
     /// Executes a DRW instruction on registers `x` and `y` and nibble `byte`.
@@ -511,6 +522,34 @@ impl Chip8 {
     /// If the sprite is positioned so part of it is outside the coordinates of the display, it wraps
     /// around to the opposite side of the screen.
     fn execute_drwvxvynibble(&mut self, x: Register, y: Register, byte: u8) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let _vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let mut msg = String::new();
+        if self.index as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} is too large for RAM.", self.index).unwrap();
+            return Err(msg);
+        } else if (self.index + byte as u16) as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} plus {} (the number of bytes we need to read) is too large for RAM.", self.index, byte).unwrap();
+            return Err(msg);
+        }
+
+        let mut combined_sprite = Vec::<u8>::new();
+        for i in 0..byte {
+            let idx: usize = (self.index + i as u16) as usize;
+            let sprite = self.memory[idx];
+            combined_sprite.push(sprite);
+        }
+
+        // TODO: Display the combined_sprite on the screen and check for collisions
+
         Err("Not yet implemented.".to_string())
     }
 
@@ -519,6 +558,13 @@ impl Chip8 {
     /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
     /// in the down position, the program counter is increased by 2.
     fn execute_skpvx(&mut self, x: Register) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        // TODO
+
         Err("Not yet implemented.".to_string())
     }
 
@@ -527,6 +573,13 @@ impl Chip8 {
     /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
     /// in the up position, the program counter is increased by 2.
     fn execute_sknpvx(&mut self, x: Register) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        // TODO
+
         Err("Not yet implemented.".to_string())
     }
 
@@ -534,6 +587,13 @@ impl Chip8 {
     ///
     /// The value of the delay timer is placed into Vx.
     fn execute_ldvxdt(&mut self, x: Register) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        // TODO
+
         Err("Not yet implemented.".to_string())
     }
 
@@ -542,6 +602,13 @@ impl Chip8 {
     /// All execution stops until a key is pressed, then the value of that key
     /// is stored in Vx.
     fn execute_ldvxk(&mut self, x: Register) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        // TODO
+
         Err("Not yet implemented.".to_string())
     }
 
@@ -549,6 +616,13 @@ impl Chip8 {
     ///
     /// The delay timer is set equal to the value of Vx.
     fn execute_lddtvx(&mut self, x: Register) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        // TODO
+
         Err("Not yet implemented.".to_string())
     }
 
@@ -556,6 +630,13 @@ impl Chip8 {
     ///
     /// The sound timer is set to the value of Vx.
     fn execute_ldstvx(&mut self, x: Register) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        // TODO
+
         Err("Not yet implemented.".to_string())
     }
 
@@ -563,35 +644,92 @@ impl Chip8 {
     ///
     /// The values of I and Vx are added, and the result is stored in I.
     fn execute_addivx(&mut self, x: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        self.index += vx as u16;
+
+        Ok(())
     }
 
-    /// Executes an sprite LD instruction.
+    /// Executes a sprite LD instruction.
     ///
     /// The value of I is set to the location of the hexadecimal sprite
     /// corresponding to the value of Vx.
     fn execute_ldfvx(&mut self, x: Register) -> Result<(), String> {
+        let _vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        // TODO
+
         Err("Not yet implemented.".to_string())
     }
 
-    /// Executes an BCD LD instruction.
+    /// Executes a BCD LD instruction.
     ///
     /// Takes the decimal value of Vx and places the hundreds digit in
     /// memory at location I, the tens digit at location I+1, and the
     /// ones digit at location I+2.
     fn execute_ldbvx(&mut self, x: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let mut msg = String::new();
+        if self.index as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} is too large for RAM.", self.index).unwrap();
+            return Err(msg);
+        } else if (self.index + 2u16) as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} plus 2 (where we will store the BCD ones digit) is too large for RAM.", self.index).unwrap();
+            return Err(msg);
+        }
+
+        let hundreds = vx / 100;
+        let vx = vx % 100;
+
+        let tens = vx / 10;
+        let vx = vx %10;
+
+        let ones = vx;
+
+        self.memory[self.index as usize] = hundreds;
+        self.memory[(self.index + 1) as usize] = tens;
+        self.memory[(self.index + 2) as usize] = ones;
+
+        Ok(())
     }
 
-    /// Executes an array LD instruction.
+    /// Executes an array LD instruction for writing.
     ///
     /// Copies the values of registers V0 through Vx into memory,
     /// starting at the address in I.
-    fn execute_ldivx(&mut self, x: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+    fn execute_ldivx(&mut self, regx_index: Register) -> Result<(), String> {
+        let mut msg = String::new();
+        if self.index as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} is too large for RAM.", self.index).unwrap();
+            return Err(msg);
+        } else if (self.index + regx_index as u16) as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} plus {} (where we will read to) is too large for RAM.", self.index, regx_index).unwrap();
+            return Err(msg);
+        }
+
+        for (idx, reg) in self.registers.iter().enumerate() {
+            if idx > regx_index {
+                break;
+            }
+
+            self.memory[(self.index + idx) as usize] = *reg;
+        }
+
+        Ok(())
     }
 
-    /// Executes an array LD instruction.
+    /// Executes an array LD instruction for reading.
     ///
     /// Reads values from memory starting at location I into
     /// registers V0 through Vx.
