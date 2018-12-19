@@ -716,14 +716,20 @@ impl Chip8 {
         } else if (self.index + regx_index as u16) as usize >= MEMORY_LENGTH_NBYTES {
             write!(msg, "Address {} plus {} (where we will read to) is too large for RAM.", self.index, regx_index).unwrap();
             return Err(msg);
+        } else if regx_index as usize >= self.registers.len() {
+            write!(msg, "Requested register index {} is too large. We have {} registers.", regx_index, self.registers.len()).unwrap();
+            return Err(msg);
         }
 
-        for (idx, reg) in self.registers.iter().enumerate() {
-            if idx > regx_index {
-                break;
-            }
-
-            self.memory[(self.index + idx) as usize] = *reg;
+        for idx in 0..regx_index {
+            let reg = match self.get_register(idx) {
+                Ok(r) => r,
+                Err(e) => {
+                    write!(msg, "Could not get a register corresponding to index {}: {}", idx, e).unwrap();
+                    return Err(msg);
+                }
+            };
+            self.memory[(self.index + idx as u16) as usize] = *reg;
         }
 
         Ok(())
@@ -733,8 +739,32 @@ impl Chip8 {
     ///
     /// Reads values from memory starting at location I into
     /// registers V0 through Vx.
-    fn execute_ldvxi(&mut self, x: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+    fn execute_ldvxi(&mut self, regx_index: Register) -> Result<(), String> {
+        let mut msg = String::new();
+        if self.index as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} is too large for RAM.", self.index).unwrap();
+            return Err(msg);
+        } else if (self.index + regx_index as u16) as usize >= MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} plus {} (where we will read to) is too large for RAM.", self.index, regx_index).unwrap();
+            return Err(msg);
+        } else if regx_index as usize >= self.registers.len() {
+            write!(msg, "Requested register index {} is too large. We have {} registers.", regx_index, self.registers.len()).unwrap();
+            return Err(msg);
+        }
+
+        for idx in 0..regx_index {
+            let tmp = self.memory[(self.index + idx as u16) as usize];
+            let reg = match self.get_register(idx) {
+                Ok(r) => r,
+                Err(e) => {
+                    write!(msg, "Could not get a register corresponding to index {}: {}", idx, e).unwrap();
+                    return Err(msg);
+                }
+            };
+            *reg = tmp;
+        }
+
+        Ok(())
     }
 
     fn execute(&mut self, op: Opcode) -> Result<(), String> {

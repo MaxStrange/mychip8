@@ -1,6 +1,9 @@
 /// The Chip 8 has 8-bit general purpose registers
 pub type Register = u8;
 
+/// The number of registers in this struct.
+const NUM_REGISTERS: usize = 16;
+
 /// All the registers in the system.
 pub struct RegisterArray {
     /// V0 - a general purpose register
@@ -58,5 +61,9 @@ impl RegisterArray {
             ve: 0u8,
             vf: 0u8,
         }
+    }
+
+    pub fn len(&self) -> usize {
+        NUM_REGISTERS
     }
 }
