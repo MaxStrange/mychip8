@@ -1,4 +1,5 @@
 use super::opcode::Opcode;
+use super::display::gui;
 use super::rand::prelude::*;
 use super::register::{Register, RegisterArray};
 use std::fmt::{self, Write};
@@ -31,6 +32,8 @@ pub struct Chip8 {
     sp: u8,
     /// The stack is implemented as its own array of 16 16-bit values, rather than just a section of RAM
     stack: [u16; STACK_SIZE_N_ADDRS],
+    /// The emulator GUI
+    user_interface: gui::Gui,
 }
 
 impl fmt::Debug for Chip8 {
@@ -57,17 +60,18 @@ impl Chip8 {
         Chip8 {
             memory: [0u8; MEMORY_LENGTH_NBYTES],
             registers: RegisterArray::new(),
-            pc: 0,
+            pc: PROGRAM_START_BYTE_ADDR,
             index: 0,
             sp: 0,
             stack: [0u16; 16],
+            user_interface: gui::Gui::new(),
         }
     }
 
     /// Attempts to load the given binary into RAM and run it.
     pub fn load(&mut self, binary: &Vec<u8>) -> Result<(), String> {
         if binary.len() < MAX_PROGRAM_SIZE_NBYTES {
-            let mut index = 0x0200;
+            let mut index = PROGRAM_START_BYTE_ADDR as usize;
             for byte in binary {
                 self.memory[index] = *byte;
                 index += 1;
@@ -86,7 +90,20 @@ impl Chip8 {
 
     /// Runs the emulator forever.
     pub fn run(&mut self) -> ! {
-        loop {
+        let mut window = self.user_interface.new_window();
+
+        while let Some(pistonevent) = window.next() {
+            self.user_interface.draw_red_rectangle(&mut window, &pistonevent);
+            self.user_interface.draw_blue_rectangle(&mut window, &pistonevent);
+
+            // TODO
+            // Clear the display
+            // Draw each panel:
+                // CHIP-8 display
+                // RAM around where PC is (including disassembly)
+                // Stack
+                // Registers
+
             // Fetch an instruction with pc
             let msb = self.memory[self.pc as usize];
             let lsb = self.memory[(self.pc + 1) as usize];
@@ -108,6 +125,8 @@ impl Chip8 {
                 },
             }
         }
+
+        std::process::exit(0);
     }
 
     /// Executes a SYS instruction.

@@ -6,4 +6,5 @@ edition = "2018"
 
 [dependencies]
 clap = "2.32"
+piston_window = "0.85.0"
 rand = "0.6.1"

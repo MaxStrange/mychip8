@@ -2,6 +2,7 @@
 extern crate clap;
 
 /* Mods */
+mod display;
 mod emulator;
 
 /* Uses */

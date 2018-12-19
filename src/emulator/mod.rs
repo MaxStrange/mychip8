@@ -3,6 +3,9 @@
 /* External crates */
 extern crate rand;
 
+/* Imports */
+use super::display;
+
 /* Public interface */
 pub mod chip8;
 
