@@ -239,7 +239,7 @@ impl Chip8 {
         Ok(())
     }
 
-    /// Executes an LD instruction on registers `x` and `y`.
+    /// Executes aLD instruction on registers `x` and `y`.
     ///
     /// Stores the value of register Vy in register Vx.
     fn execute_ldvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
@@ -262,21 +262,57 @@ impl Chip8 {
     ///
     /// Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
     fn execute_orvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = *vx | vy;
+
+        Ok(())
     }
 
     /// Executes an AND instruction on registers `x` and `y`.
     ///
     /// Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
     fn execute_andvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = *vx & vy;
+
+        Ok(())
     }
 
     /// Executes an XOR instruction on registers `x` and `y`.
     ///
     /// Performs a bitwise XOR on the values of Vx and Vy, then stores the result in Vx.
     fn execute_xorvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = *vx ^ vy;
+
+        Ok(())
     }
 
     /// Executes an ADD instruction on registers `x` and `y`.
@@ -285,7 +321,27 @@ impl Chip8 {
     /// If the result is greater than 255, VF is set to 1, otherwise it is set to 0.
     /// Only the lowest 8 bits are stored in Vx.
     fn execute_addvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        let tmp: u16 = (*vx + vy) as u16;
+
+        *vx = tmp as u8;
+
+        if tmp > 0x00FF {
+            self.registers.vf = 1;
+        } else {
+            self.registers.vf = 0;
+        }
+
+        Ok(())
     }
 
     /// Executes a SUB instruction on registers `x` and `y`.
@@ -293,7 +349,27 @@ impl Chip8 {
     /// If Vx > Vy, then VF is set to 1, otherwise set it to 0. Then Vy is subtracted from Vx
     /// and the result is stored in Vx.
     fn execute_subvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = *vx - vy;
+
+        let gt: bool = *vx > vy;
+
+        if gt {
+            self.registers.vf = 1;
+        } else {
+            self.registers.vf = 0;
+        }
+
+        Ok(())
     }
 
     /// Executes a SHR instruction on register `x`.
@@ -301,7 +377,20 @@ impl Chip8 {
     /// If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is
     /// bit shifted right by one (in other words, Vx is divided by 2).
     fn execute_shrvx(&mut self, x: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        let lsb_is_one: bool = (*vx | 0x01) == 1;
+        *vx = *vx >> 1;
+        if lsb_is_one {
+            self.registers.vf = 1;
+        } else {
+            self.registers.vf = 0;
+        }
+
+        Ok(())
     }
 
     /// Executes a SUBN instruction on registers `x` and `y`.
@@ -309,7 +398,27 @@ impl Chip8 {
     /// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy
     /// and the result is stored in Vx.
     fn execute_subnvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        *vx = *vx - vy;
+
+        let lt: bool = *vx < vy;
+
+        if lt {
+            self.registers.vf = 1;
+        } else {
+            self.registers.vf = 0;
+        }
+
+        Ok(())
     }
 
     /// Executes a SHL instruction on register `x`.
@@ -317,7 +426,20 @@ impl Chip8 {
     /// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is shifted
     /// left by one bit (in other words, Vx is multiplied by 2).
     fn execute_shlvx(&mut self, x: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vx = match self.get_register(x) {
+            Ok(r) => r,
+            Err(msg) => return Err(msg),
+        };
+
+        let msb_is_one: bool = (*vx | 0x80) > 0;
+        *vx = *vx << 1;
+        if msb_is_one {
+            self.registers.vf = 1;
+        } else {
+            self.registers.vf = 0;
+        }
+
+        Ok(())
     }
 
     /// Executes an SNE instruction on registers `x` and `y`.
@@ -325,21 +447,52 @@ impl Chip8 {
     /// The values of Vx and Vy are compared and if they are NOT equal, the program counter is
     /// incremented by 2.
     fn execute_snevxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let vy = match self.get_register(y) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        let vx = match self.get_register(x) {
+            Ok(r) => *r,
+            Err(msg) => return Err(msg),
+        };
+
+        if vx != vy {
+            self.pc += 2;
+        }
+
+        Ok(())
     }
 
-    /// Executes an LD instruction on register I and `addr`.
+    /// Executes a LD instruction on register I and `addr`.
     ///
     /// The value of regsiter I is set to the value at RAM address `addr`.
     fn execute_ldiaddr(&mut self, addr: Address) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        if addr as usize >= MEMORY_LENGTH_NBYTES {
+            let mut msg = String::new();
+            write!(msg, "Address {} is out of range of the RAM.", addr).unwrap();
+            Err(msg)
+        } else {
+            self.index = self.memory[addr as usize] as u16;
+            Ok(())
+        }
     }
 
     /// Executes a JP instruction on V0 and `addr`.
     ///
     /// The program counter is set to `addr` plus the value of V0.
     fn execute_jpv0addr(&mut self, addr: Address) -> Result<(), String> {
-        Err("Not yet implemented.".to_string())
+        let mut msg = String::new();
+        if addr as usize > MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} is out of range of the RAM.", addr).unwrap();
+            Err(msg)
+        } else if (addr + self.registers.v0 as u16) as usize > MEMORY_LENGTH_NBYTES {
+            write!(msg, "Address {} plus {} (the contents of V0) is out of range of the RAM.", addr, self.registers.v0).unwrap();
+            Err(msg)
+        } else {
+            self.pc = addr + self.registers.v0 as u16;
+            Ok(())
+        }
     }
 
     /// Executes a RND instruction on `x` and byte `byte`.
