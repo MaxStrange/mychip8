@@ -20,7 +20,7 @@ type Address = u16;
 pub struct Chip8 {
     /// The RAM:
     /// 0x0000 to 0x01FF is reserved for the interpreter
-    /// 0x0200 to 0x0FFF is where the ROM will be loaded and scratch space for the program
+    /// 0x0200 to 0x0FFF is where the ROM will be loaed and scratch space for the program
     memory: [u8; MEMORY_LENGTH_NBYTES],
     /// The Chip-8 has 15 1-byte general purpose registers and one that is used as a carry flag.
     registers:  RegisterArray,
@@ -119,6 +119,9 @@ impl Chip8 {
                     panic!("Problem executing instruction {:?}: {}. State of us: {:?}", opcode, msg, self)
                 },
             }
+
+            // Increment PC
+            self.pc += 1;
         }
 
         std::process::exit(0);

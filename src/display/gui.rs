@@ -2,6 +2,11 @@
 
 use super::piston_window as pwindow;
 
+/// Width of the whole GUI in pixels
+const WIDTH_NPIXELS: u32 = 640;
+/// Height of the whole GUI in pixels
+const HEIGHT_NPIXELS: u32 = 480;
+
 pub struct Gui {
     window: pwindow::PistonWindow,
 }
@@ -9,7 +14,7 @@ pub struct Gui {
 impl Gui {
     pub fn new() -> Self {
         Gui {
-            window: pwindow::WindowSettings::new("CHIP-8", [640, 480]).exit_on_esc(true).build().unwrap(),
+            window: pwindow::WindowSettings::new("CHIP-8", [WIDTH_NPIXELS, HEIGHT_NPIXELS]).exit_on_esc(true).build().unwrap(),
         }
     }
 

@@ -1,6 +1,7 @@
-/// Opcodes
+use std::fmt;
 
 #[derive(Debug, Clone, Copy)]
+/// Opcodes
 pub enum Opcode {
     /// 0x0nnn: Jump to a machine code routine at nnn.
     SYS(u16),
@@ -78,7 +79,7 @@ pub enum Opcode {
 
 impl Opcode {
     pub fn new(instruction: u16) -> Result<Self, String> {
-        match instruction & 0x8000 {
+        match instruction & 0xF000 {
             0x0000 => {
                 if instruction == 0x00E0 {
                     Ok(Opcode::CLS)
@@ -181,6 +182,50 @@ impl Opcode {
                 }
             },
             _ => panic!("It should be impossible to even get here..."),
+        }
+    }
+}
+
+impl fmt::Display for Opcode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Op: ")?;
+
+        match self {
+            Opcode::SYS(addr) => write!(f, "SYS(0x{:04x})", addr),
+            Opcode::CLS => write!(f, "CLS"),
+            Opcode::RET => write!(f, "RET"),
+            Opcode::JP(addr) => write!(f, "JP(0x{:04x})", addr),
+            Opcode::CALL(addr) => write!(f, "CALL(0x{:04x})", addr),
+            Opcode::SEVxByte(x, kk) => write!(f, "SEVxByte(V{}, {})", x, kk),
+            Opcode::SNEVxByte(x, kk) => write!(f, "SNEVxByte(V{}, {})", x, kk),
+            Opcode::SEVxVy(x, y) => write!(f, "SEVxVy(V{}, V{})", x, y),
+            Opcode::LDVxByte(x, kk) => write!(f, "LDVxByte(V{}, {})", x, kk),
+            Opcode::ADDVxByte(x, kk) => write!(f, "ADDVxByte(V{}, {})", x, kk),
+            Opcode::LDVxVy(x, y) => write!(f, "LDVxVy(V{}, V{})", x, y),
+            Opcode::ORVxVy(x, y) => write!(f, "ORVxVy(V{}, V{})", x, y),
+            Opcode::ANDVxVy(x, y) => write!(f, "ANDVxVy(V{}, V{})", x, y),
+            Opcode::XORVxVy(x, y) => write!(f, "XORVxVy(V{}, V{})", x, y),
+            Opcode::ADDVxVy(x, y) => write!(f, "ADDVxVy(V{}, V{})", x, y),
+            Opcode::SUBVxVy(x, y) => write!(f, "SUBVxVy(V{}, V{})", x, y),
+            Opcode::SHRVx(x) => write!(f, "SHRVx(V{})", x),
+            Opcode::SUBNVxVy(x, y) => write!(f, "SUBNVxVy(V{}, V{})", x, y),
+            Opcode::SHLVx(x) => write!(f, "SHLVx({})", x),
+            Opcode::SNEVxVy(x, y) => write!(f, "SNEVxVy(V{}, V{})", x, y),
+            Opcode::LDIAddr(addr) => write!(f, "LDIAddr(0x{:04x})", addr),
+            Opcode::JPV0Addr(addr) => write!(f, "JPV0Addr(0x{:04x})", addr),
+            Opcode::RNDVxByte(x, kk) => write!(f, "RNDVxByte(V{}, 0x{:02x})", x, kk),
+            Opcode::DRWVxVyNibble(x, y, n) => write!(f, "DRWVxVyNibble(V{}, V{}, {})", x, y, n),
+            Opcode::SKPVx(x) => write!(f, "SKPVx(V{})", x),
+            Opcode::SKNPVx(x) => write!(f, "SKNPVx(V{})", x),
+            Opcode::LDVxDT(x) => write!(f, "LDVxDT(V{})", x),
+            Opcode::LDVxK(x) => write!(f, "LDVxK(V{})", x),
+            Opcode::LDDTVx(x) => write!(f, "LDDTVx(V{})", x),
+            Opcode::LDSTVx(x) => write!(f, "LDSTVx(V{})", x),
+            Opcode::ADDIVx(x) => write!(f, "ADDIVx(V{})", x),
+            Opcode::LDFVx(x) => write!(f, "LDFVx(V{})", x),
+            Opcode::LDBVx(x) => write!(f, "LDBVx(V{})", x),
+            Opcode::LDIVx(x) => write!(f, "LDIVx(V{})", x),
+            Opcode::LDVxI(x) => write!(f, "LDVxI(V{})", x),
         }
     }
 }
