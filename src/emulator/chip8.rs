@@ -90,19 +90,14 @@ impl Chip8 {
 
     /// Runs the emulator forever.
     pub fn run(&mut self) -> ! {
-        let mut window = self.user_interface.new_window();
-
-        while let Some(pistonevent) = window.next() {
-            self.user_interface.draw_red_rectangle(&mut window, &pistonevent);
-            self.user_interface.draw_blue_rectangle(&mut window, &pistonevent);
-
-            // TODO
-            // Clear the display
-            // Draw each panel:
-                // CHIP-8 display
-                // RAM around where PC is (including disassembly)
-                // Stack
-                // Registers
+        while let Some(pistonevent) = self.user_interface.next() {
+            // Draw everything
+            self.user_interface.clear(&pistonevent);
+            self.user_interface.draw_paneling(&pistonevent);
+            self.user_interface.draw_chip8(&pistonevent);
+            self.user_interface.draw_ram(&pistonevent, self.pc, &self.memory);
+            self.user_interface.draw_stack(&pistonevent, self.sp, &self.stack);
+            self.user_interface.draw_registers(&pistonevent, &self.registers.as_array(), self.index);
 
             // Fetch an instruction with pc
             let msb = self.memory[self.pc as usize];
