@@ -1,5 +1,6 @@
 //! The GUI
 
+use super::panel;
 use super::piston_window as pwindow;
 
 /// Width of the whole GUI in pixels
@@ -25,14 +26,19 @@ const RIGHT_PANEL_HEIGHT_NPIXELS: u32 = HEIGHT_NPIXELS - BOTTOM_PANEL_HEIGHT_NPI
 /// The width of the bottom panel in pixels
 const BOTTOM_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS;
 
-
 pub struct Gui {
+    chip8_panel: panel::Panel,
+    ram_panel: panel::Panel,
+    stack_panel: panel::Panel,
     window: pwindow::PistonWindow,
 }
 
 impl Gui {
     pub fn new() -> Self {
         Gui {
+            chip8_panel: panel::Panel::new(0, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
+            ram_panel: panel::Panel::new(0, CHIP8_HEIGHT_AFTER_SF, BOTTOM_PANEL_HEIGHT_NPIXELS, BOTTOM_PANEL_WIDTH_NPIXELS),
+            stack_panel: panel::Panel::new(CHIP8_WIDTH_AFTER_SF, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
             window: pwindow::WindowSettings::new("CHIP-8", [WIDTH_NPIXELS, HEIGHT_NPIXELS]).exit_on_esc(true).build().unwrap(),
         }
     }
@@ -40,24 +46,6 @@ impl Gui {
     pub fn next(&mut self) -> Option<pwindow::Event> {
         self.window.next()
     }
-
-    // Examples of how to draw stuff
-    //pub fn draw_red_rectangle(&mut self, event: &pwindow::Event) {
-    //    self.window.draw_2d(event, |context, graphics| {
-    //        let red = [1.0, 0.0, 0.0, 1.0];
-    //        let rectangle = [0.0, 0.0, 100.0, 100.0];
-    //        pwindow::clear([1.0; 4], graphics);
-    //        pwindow::rectangle(red, rectangle, context.transform, graphics);
-    //    });
-    //}
-
-    //pub fn draw_blue_rectangle(&mut self, event: &pwindow::Event) {
-    //    self.window.draw_2d(event, |context, graphics| {
-    //        let blue = [0.0, 0.0, 1.0, 1.0];
-    //        let rectangle = [100.0, 100.0, 200.0, 200.0];
-    //        pwindow::rectangle(blue, rectangle, context.transform, graphics);
-    //    });
-    //}
 
     /// Clears the whole display
     pub fn clear(&mut self, event: &pwindow::Event) {
@@ -94,26 +82,19 @@ impl Gui {
     /// Emulated instructions should change the internal representation, and then this
     /// function should get called once per emulation cycle, or perhaps only whenever
     /// anything has changed in the display.
-    pub fn draw_chip8(&mut self, _event: &pwindow::Event) {
-        // TODO
+    pub fn draw_chip8(&mut self, event: &pwindow::Event) {
+        self.chip8_panel.draw(panel::Context::Chip8{window: &mut self.window, event: event});
     }
 
     /// Draw the RAM around where the program counter is currently.
     ///
     /// Includes disassembly of instructions... if I ever get around to that.
-    pub fn draw_ram(&mut self, _event: &pwindow::Event, _pc: u16, _ram: &[u8]) {
-        // TODO: alternate rectangles for text backgrounds rows
-        // TODO: place text in rows
+    pub fn draw_ram(&mut self, event: &pwindow::Event, pc: u16, ram: &[u8]) {
+        self.ram_panel.draw(panel::Context::Ram{window: &mut self.window, event: event, pc: pc, ram: ram});
     }
 
     /// Draw the stack, including an indication of where the stack pointer is.
-    pub fn draw_stack(&mut self, _event: &pwindow::Event, _sp: u8, _stack: &[u16]) {
-        // TODO: alternate rectangles for text backgrounds rows
-        // TODO: place text in rows
-    }
-
-    /// Draw the contents of the registers.
-    pub fn draw_registers(&mut self, _event: &pwindow::Event, _vregs: &[u8], _idxreg: u16) {
-        // TODO
+    pub fn draw_stack(&mut self, event: &pwindow::Event, sp: u8, stack: &[u16]) {
+        self.stack_panel.draw(panel::Context::Stack{window: &mut self.window, event: event, sp: sp, stack: stack});
     }
 }

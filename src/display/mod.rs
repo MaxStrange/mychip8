@@ -5,3 +5,6 @@ extern crate piston_window;
 
 /* Public interfaces */
 pub mod gui;
+
+/* Internal mods */
+mod panel;
