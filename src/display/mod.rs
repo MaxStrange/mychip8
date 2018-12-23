@@ -2,6 +2,7 @@
 
 /* Externs */
 extern crate piston_window;
+extern crate rusttype;
 
 /* Public interfaces */
 pub mod gui;
