@@ -25,6 +25,8 @@ const BOTTOM_PANEL_HEIGHT_NPIXELS: u32 = HEIGHT_NPIXELS - CHIP8_HEIGHT_AFTER_SF;
 const RIGHT_PANEL_HEIGHT_NPIXELS: u32 = HEIGHT_NPIXELS - BOTTOM_PANEL_HEIGHT_NPIXELS;
 /// The width of the bottom panel in pixels
 const BOTTOM_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS;
+/// The radius of the boarder
+const BORDER_RADIUS: f64 = 3.0;
 
 pub struct Gui {
     chip8_panel: panel::Panel,
@@ -36,9 +38,9 @@ pub struct Gui {
 impl Gui {
     pub fn new() -> Self {
         Gui {
-            chip8_panel: panel::Panel::new(0, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
-            ram_panel: panel::Panel::new(0, CHIP8_HEIGHT_AFTER_SF, BOTTOM_PANEL_HEIGHT_NPIXELS, BOTTOM_PANEL_WIDTH_NPIXELS),
-            stack_panel: panel::Panel::new(CHIP8_WIDTH_AFTER_SF, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
+            chip8_panel: panel::Panel::new(0, 0, CHIP8_HEIGHT_AFTER_SF, CHIP8_WIDTH_AFTER_SF),
+            ram_panel: panel::Panel::new(0, CHIP8_HEIGHT_AFTER_SF + BORDER_RADIUS as u32, BOTTOM_PANEL_HEIGHT_NPIXELS, BOTTOM_PANEL_WIDTH_NPIXELS),
+            stack_panel: panel::Panel::new(CHIP8_WIDTH_AFTER_SF + BORDER_RADIUS as u32, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
             window: pwindow::WindowSettings::new("CHIP-8", [WIDTH_NPIXELS, HEIGHT_NPIXELS]).exit_on_esc(true).build().unwrap(),
         }
     }
@@ -56,8 +58,6 @@ impl Gui {
 
     /// Draws the borders between the panels
     pub fn draw_paneling(&mut self, event: &pwindow::Event) {
-        let border_radius = 3.0;
-
         let vert_x0 = CHIP8_WIDTH_AFTER_SF as f64;
         let vert_y0 = 0.0f64;
         let vert_x1 = vert_x0;
@@ -71,8 +71,8 @@ impl Gui {
         let horizontal_line = [horz_x0, horz_y0, horz_x1, horz_y1];
 
         self.window.draw_2d(event, |context, graphics| {
-            pwindow::line(pwindow::color::BLACK, border_radius, vertical_line, context.transform, graphics);
-            pwindow::line(pwindow::color::BLACK, border_radius, horizontal_line, context.transform, graphics);
+            pwindow::line(pwindow::color::BLACK, BORDER_RADIUS, vertical_line, context.transform, graphics);
+            pwindow::line(pwindow::color::BLACK, BORDER_RADIUS, horizontal_line, context.transform, graphics);
         });
     }
 

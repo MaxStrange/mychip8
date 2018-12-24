@@ -7,6 +7,8 @@ use super::rusttype;
 #[derive(Debug, Clone, Copy)]
 /// X, Y values
 struct Point(u32, u32);
+
+#[derive(Debug, Clone)]
 /// Top-left and bottom-right points
 struct Rectangle(Point, Point);
 
@@ -83,7 +85,7 @@ impl Panel {
                 let text = format!("0x{:04x}", stack[idx]);
                 let color = pwindow::color::BLACK;
                 let fontsize = 12;
-                let transform = context.transform.trans(topleft.0 as f64, topleft.1 as f64);
+                let transform = context.transform.trans(topleft.0 as f64, (topleft.1 + rect.height() - 2) as f64);
                 if let Err(e) = pwindow::text(color, fontsize, &text, &mut glyphcache, transform, graphics) {
                     println!("Could not draw stack: {:?}", e);
                 }
@@ -137,7 +139,7 @@ impl Panel {
         for row_idx in 0..nrows {
             let color = if row_idx % 2 == 0 { back_color_off } else { pwindow::color::WHITE };
             let row_origin = Point(self.origin.0, self.origin.1 + (row_height * row_idx as u32));
-            let row_end = Point(row_origin.0 + row_width, row_origin.1 + self.height_npixels);
+            let row_end = Point(row_origin.0 + row_width, row_origin.1 + row_height);
             let rectangle = [row_origin.0 as f64, row_origin.1 as f64, row_end.0 as f64, row_end.1 as f64];
             window.draw_2d(event, |context, graphics| {
                 pwindow::rectangle(color, rectangle, context.transform, graphics);
