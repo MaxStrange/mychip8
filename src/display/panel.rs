@@ -1,6 +1,7 @@
 //! Panel that can display stuff
 
 use super::piston_window as pwindow;
+use self::pwindow::Transformed;
 use super::rusttype;
 
 #[derive(Debug, Clone, Copy)]
@@ -17,6 +18,12 @@ impl Rectangle {
     pub fn width(&self) -> u32 {
         (self.1).0 - (self.0).0
     }
+}
+
+/// Which direction an arrow is pointing
+enum ArrowDirection {
+    Left,
+    Right,
 }
 
 /// The different possible argument combinations that we might pass
@@ -70,16 +77,51 @@ impl Panel {
         let mut glyphcache = pwindow::glyph_cache::rusttype::GlyphCache::from_font(font, window.factory.clone(), pwindow::TextureSettings::new());
 
         let rects = self.draw_rows(window, event, stack.len());
-        for (idx, rect) in rects.iter().enumerate() {
+        for (idx, rect) in rects.iter().rev().enumerate() {
             let topleft = rect.0;
-            let bottomright = rect.1;
             window.draw_2d(event, |context, graphics| {
-                let text = format!("0x{:x}", stack[idx]);
+                let text = format!("0x{:04x}", stack[idx]);
                 let color = pwindow::color::BLACK;
-                let fontsize = rect.height() - ((0.25 * rect.height() as f64) as u32);
-                pwindow::text(color, fontsize, &text, &mut glyphcache, context.transform, graphics);
+                let fontsize = 12;
+                let transform = context.transform.trans(topleft.0 as f64, topleft.1 as f64);
+                if let Err(e) = pwindow::text(color, fontsize, &text, &mut glyphcache, transform, graphics) {
+                    println!("Could not draw stack: {:?}", e);
+                }
             });
+            if idx == sp as usize {
+                let three_fourths_over = (rect.0).0 + (3 * (rect.width() / 4));
+                let halfway_down = (rect.0).1 + 1;
+                self.draw_arrow(window, event, ArrowDirection::Left, Point(three_fourths_over, halfway_down))
+            }
         }
+    }
+
+    /// Draws a small arrow at the given location pointing the given direction.
+    fn draw_arrow(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, direction: ArrowDirection, topleft: Point) {
+        let arrow_height = 12;
+        let arrow_width = 6;
+        let arrow_length = 24;
+        let line_start = Point(topleft.0, topleft.1 + (arrow_height / 2));
+        let line_end = Point(topleft.0 + arrow_length, line_start.1);
+        let radius = (arrow_width / 3) as f64;
+        let line: [f64; 4] = [line_start.0 as f64, line_start.1 as f64, line_end.0 as f64, line_end.1 as f64];
+        window.draw_2d(event, |context, graphics| {
+            pwindow::line(pwindow::color::BLACK, radius, line, context.transform, graphics);
+            let (upline, downline) = match direction {
+                ArrowDirection::Left => {
+                    let up = [line_start.0 as f64, line_start.1 as f64, (line_start.0 + arrow_width) as f64, (line_start.1 - (arrow_height / 2)) as f64];
+                    let down = [line_start.0 as f64, line_start.1 as f64, (line_start.0 + arrow_width) as f64, (line_start.1 + (arrow_height / 2)) as f64];
+                    (up, down)
+                },
+                ArrowDirection::Right => {
+                    let up = [line_end.0 as f64, line_end.1 as f64, (line_end.0 - arrow_width) as f64, (line_end.1 - (arrow_height / 2)) as f64];
+                    let down = [line_end.0 as f64, line_end.1 as f64, (line_end.0 - arrow_width) as f64, (line_end.1 + (arrow_height / 2)) as f64];
+                    (up, down)
+                },
+            };
+            pwindow::line(pwindow::color::BLACK, radius, upline, context.transform, graphics);
+            pwindow::line(pwindow::color::BLACK, radius, downline, context.transform, graphics);
+        });
     }
 
     /// Draws alternating dark/light rectangles on the screen, suitable for
