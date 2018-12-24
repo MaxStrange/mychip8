@@ -65,11 +65,50 @@ impl Panel {
     }
 
     fn draw_chip8(&mut self, _window: &mut pwindow::PistonWindow, _event: &pwindow::Event) {
+        // TODO
     }
 
     fn draw_ram(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, pc: u16, ram: &[u8]) {
+        // Construct the glyph cache
+        let font_data: &[u8] = include_bytes!("../../assets/fonts/roboto/Roboto-Regular.ttf");
+        let font: rusttype::Font<'static> = rusttype::Font::from_bytes(font_data).expect("Fatal error: Corrupt font binary?");
+        let mut glyphcache = pwindow::glyph_cache::rusttype::GlyphCache::from_font(font, window.factory.clone(), pwindow::TextureSettings::new());
+
         let nrows = 12;
-        self.draw_rows(window, event, nrows);
+        let rects = self.draw_rows(window, event, nrows);
+
+        if (pc as usize) < (nrows / 2) {
+            return;  // Program counter is in a crazy place
+        }
+        for (idx, rect) in rects.iter().rev().enumerate() {
+            let topleft = rect.0;
+            let ramaddr = (pc as usize - (nrows / 2)) + idx;
+            window.draw_2d(event, |context, graphics| {
+                let text = format!("0x{:02x}", ram[ramaddr]);
+                let color = pwindow::color::BLACK;
+                let fontsize = 12;
+                let transform = context.transform.trans(topleft.0 as f64, (topleft.1 + rect.height() - 2) as f64);
+                if let Err(e) = pwindow::text(color, fontsize, &text, &mut glyphcache, transform, graphics) {
+                    println!("Could not draw RAM: {:?}", e);
+                }
+            });
+            if ramaddr == pc as usize {
+                let halfway_over = (rect.0).0 + (rect.width() / 2);
+                let five_eighths_over = (rect.0).0 + (5 * (rect.width() / 8));
+                let halfway_down = (rect.0).1 + 1;
+                self.draw_arrow(window, event, ArrowDirection::Left, Point(halfway_over, halfway_down));
+
+                window.draw_2d(event, |context, graphics| {
+                    let text = format!("PC Loc: 0x{:04x}", pc);
+                    let transform = context.transform.trans(five_eighths_over as f64, (topleft.1 + rect.height() - 2) as f64);
+                    let fontsize = 14;
+                    let color = pwindow::color::BLACK;
+                    if let Err(e) = pwindow::text(color, fontsize, &text, &mut glyphcache, transform, graphics) {
+                        println!("Could not draw PC: {:?}", e);
+                    }
+                });
+            }
+        }
     }
 
     fn draw_stack(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, sp: u8, stack: &[u16]) {
@@ -93,7 +132,7 @@ impl Panel {
             if idx == sp as usize {
                 let three_fourths_over = (rect.0).0 + (3 * (rect.width() / 4));
                 let halfway_down = (rect.0).1 + 1;
-                self.draw_arrow(window, event, ArrowDirection::Left, Point(three_fourths_over, halfway_down))
+                self.draw_arrow(window, event, ArrowDirection::Left, Point(three_fourths_over, halfway_down));
             }
         }
     }
