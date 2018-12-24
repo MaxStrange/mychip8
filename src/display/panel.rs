@@ -22,6 +22,7 @@ impl Rectangle {
     }
 }
 
+#[allow(dead_code)]
 /// Which direction an arrow is pointing
 enum ArrowDirection {
     Left,
