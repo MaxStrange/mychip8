@@ -3,6 +3,8 @@ use std::fmt;
 #[derive(Debug, Clone, Copy)]
 /// Opcodes
 pub enum Opcode {
+    /// 0x00A0: Break and wait for emulator to start program again. This is not standard, and is used for a test interface.
+    BRK,
     /// 0x0nnn: Jump to a machine code routine at nnn.
     SYS(u16),
     /// 0x00E0: Clear the display.
@@ -81,7 +83,9 @@ impl Opcode {
     pub fn new(instruction: u16) -> Result<Self, String> {
         match instruction & 0xF000 {
             0x0000 => {
-                if instruction == 0x00E0 {
+                if instruction == 0x00A0 {
+                    Ok(Opcode::BRK)
+                } else if instruction == 0x00E0 {
                     Ok(Opcode::CLS)
                 } else if instruction == 0x00EE {
                     Ok(Opcode::RET)
@@ -191,6 +195,7 @@ impl fmt::Display for Opcode {
         write!(f, "Op: ")?;
 
         match self {
+            Opcode::BRK => write!(f, "BRK"),
             Opcode::SYS(addr) => write!(f, "SYS(0x{:04x})", addr),
             Opcode::CLS => write!(f, "CLS"),
             Opcode::RET => write!(f, "RET"),

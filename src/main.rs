@@ -9,8 +9,10 @@ mod emulator;
 use self::emulator::chip8;
 use std::fs;
 use std::io::Read;
+use std::sync::mpsc;
 use std::path;
 use std::process;
+use std::thread;
 
 fn main() {
     // Check args for a valid file
@@ -52,18 +54,26 @@ fn main() {
         },
     }
 
-    // Create and initialize a Chip 8 instance
-    let mut emu = chip8::Chip8::new();
+    // Make some pipes. Use these for debugging and in the test rig.
+    let (_mytx, yourrx): (mpsc::Sender<chip8::EmulatorCommand>, mpsc::Receiver<chip8::EmulatorCommand>) = mpsc::channel();
+    let (yourtx, _myrx): (mpsc::Sender<chip8::EmulatorResponse>, mpsc::Receiver<chip8::EmulatorResponse>) = mpsc::channel();
 
-    // Load the program into memory
-    match emu.load(&binary) {
-        Ok(()) => (),
-        Err(s) => {
-            println!("Could not load binary: {}", s);
-            process::exit(3);
-        },
-    }
+    // Spawn an emulator. We can send it commands while it is running. Useful for debugging.
+    let emuthread = thread::spawn(move || {
+        // Create and initialize a Chip 8 instance
+        let mut emu = chip8::Chip8::new(yourtx, yourrx);
 
-    // Hand over control to the emulator
-    emu.run();
+        // Load the program into memory
+        match emu.load(&binary) {
+            Ok(()) => (),
+            Err(s) => {
+                println!("Could not load binary: {}", s);
+                process::exit(3);
+            },
+        }
+
+        emu.run();
+    });
+
+    emuthread.join().expect("Did not join emu thread correctly.");
 }

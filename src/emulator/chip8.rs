@@ -3,6 +3,7 @@ use super::display::gui;
 use super::rand::prelude::*;
 use super::register::{Register, RegisterArray};
 use std::fmt::{self, Write};
+use std::sync::mpsc;
 
 /// The length of our RAM in bytes
 const MEMORY_LENGTH_NBYTES: usize = 4096;
@@ -13,14 +14,32 @@ const MAX_PROGRAM_SIZE_NBYTES: usize = MEMORY_LENGTH_NBYTES - (PROGRAM_START_BYT
 /// There are this many addresses in the special stack array at most.
 const STACK_SIZE_N_ADDRS: usize = 16;
 
+/// The different commands the emulator understands. Used for debugging.
+pub enum EmulatorCommand {
+    /// Peek from address to address + nbytes.
+    Peek(Address, usize),
+    /// Resume normal execution of the program.
+    ResumeExecution,
+}
+
+/// The possible responses from the emulator in response to EmulatorCommands
+pub enum EmulatorResponse {
+    /// Returns a bunch of bytes.
+    MemorySlice(Vec<u8>),
+}
+
 /// An address in RAM. RAM's address space can be described by 12 bits.
 type Address = u16;
 
 /// The Chip 8 emulator
 pub struct Chip8 {
+    /// Debug pipe receiving end
+    debugrx: mpsc::Receiver<EmulatorCommand>,
+    /// Debug pipe sending end
+    debugtx: mpsc::Sender<EmulatorResponse>,
     /// The RAM:
     /// 0x0000 to 0x01FF is reserved for the interpreter
-    /// 0x0200 to 0x0FFF is where the ROM will be loaed and scratch space for the program
+    /// 0x0200 to 0x0FFF is where the ROM will be loaded
     memory: [u8; MEMORY_LENGTH_NBYTES],
     /// The Chip-8 has 15 1-byte general purpose registers and one that is used as a carry flag.
     registers:  RegisterArray,
@@ -56,8 +75,10 @@ impl fmt::Debug for Chip8 {
 
 impl Chip8 {
     /// Create a new instance of the emulator.
-    pub fn new() -> Self {
+    pub fn new(tx: mpsc::Sender<EmulatorResponse>, rx: mpsc::Receiver<EmulatorCommand>) -> Self {
         Chip8 {
+            debugrx: rx,
+            debugtx: tx,
             memory: [0u8; MEMORY_LENGTH_NBYTES],
             registers: RegisterArray::new(),
             pc: PROGRAM_START_BYTE_ADDR,
@@ -126,6 +147,29 @@ impl Chip8 {
         std::process::exit(0);
     }
 
+    /// Stop executing code and instead wait around on self.debugrx, executing debug commands we receive over the pipeline.
+    fn execute_brk(&mut self) -> Result<(), String> {
+        // Sit around waiting for debug commands
+        while let Ok(cmd) = self.debugrx.recv() {
+
+            // Check the received command
+            match cmd {
+                // Get some bytes and return them
+                EmulatorCommand::Peek(addr, nbytes) => {
+                    let mut bytes = Vec::<u8>::new();
+                    for i in 0..nbytes {
+                        bytes.push(self.memory[(addr as usize + i) as usize]);
+                    }
+                    self.debugtx.send(EmulatorResponse::MemorySlice(bytes)).unwrap();
+                },
+
+                // Break from the BRK loop
+                EmulatorCommand::ResumeExecution => break,
+            }
+        }
+        Ok(())
+    }
+
     /// Executes a SYS instruction.
     ///
     /// The SYS instruction jumps to a machine code routine at the given address.
@@ -140,8 +184,9 @@ impl Chip8 {
     ///
     /// Clears the display.
     fn execute_cls(&mut self) -> Result<(), String> {
-        // TODO
-        Err("Not yet implemented".to_string())
+        self.user_interface.clear_chip8();
+
+        Ok(())
     }
 
     /// Executes a RET instruction.
@@ -803,6 +848,7 @@ impl Chip8 {
 
     fn execute(&mut self, op: Opcode) -> Result<(), String> {
         match op {
+            Opcode::BRK => self.execute_brk(),
             Opcode::SYS(addr) => self.execute_sys(addr),
             Opcode::CLS => self.execute_cls(),
             Opcode::RET => self.execute_ret(),

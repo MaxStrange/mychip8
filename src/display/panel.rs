@@ -29,10 +29,16 @@ enum ArrowDirection {
     Right,
 }
 
+/// The different instructions that can be executed as part of drawing stuff in the Chip8 panel.
+pub enum Chip8Instruction {
+    /// Clear the Chip8 panel of anything the user has drawn.
+    ClearScreen,
+}
+
 /// The different possible argument combinations that we might pass
 /// to a Panel's draw method.
 pub enum Context<'a> {
-    Chip8{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event},
+    Chip8{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, instructions: &'a Vec<Chip8Instruction>},
     Ram{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, pc: u16, ram: &'a [u8]},
     Stack{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, sp: u8, stack: &'a [u16]},
 }
@@ -59,14 +65,25 @@ impl Panel {
 
     pub fn draw(&mut self, context: Context) {
         match context {
-            Context::Chip8{window, event} => self.draw_chip8(window, event),
+            Context::Chip8{window, event, instructions} => self.draw_chip8(window, event, instructions),
             Context::Ram{window, event, pc, ram} => self.draw_ram(window, event, pc, ram),
             Context::Stack{window, event, sp, stack} => self.draw_stack(window, event, sp, stack),
         }
     }
 
-    fn draw_chip8(&mut self, _window: &mut pwindow::PistonWindow, _event: &pwindow::Event) {
-        // TODO
+    fn chip8_clear_screen(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
+        let rect = [self.origin.0 as f64, self.origin.1 as f64, (self.origin.0 + self.width_npixels) as f64, (self.origin.1 + self.height_npixels) as f64];
+        window.draw_2d(event, |context, graphics| {
+            pwindow::rectangle(pwindow::color::WHITE, rect, context.transform, graphics);
+        });
+    }
+
+    fn draw_chip8(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, instructions: &Vec<Chip8Instruction>) {
+        for instr in instructions {
+            match instr {
+                Chip8Instruction::ClearScreen => self.chip8_clear_screen(window, event),
+            }
+        }
     }
 
     fn draw_ram(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, pc: u16, ram: &[u8]) {

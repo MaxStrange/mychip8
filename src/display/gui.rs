@@ -29,6 +29,7 @@ const BOTTOM_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS;
 const BORDER_RADIUS: f64 = 3.0;
 
 pub struct Gui {
+    chip8_instruction_buffer: Vec<panel::Chip8Instruction>,
     chip8_panel: panel::Panel,
     ram_panel: panel::Panel,
     stack_panel: panel::Panel,
@@ -38,6 +39,7 @@ pub struct Gui {
 impl Gui {
     pub fn new() -> Self {
         Gui {
+            chip8_instruction_buffer: Vec::<panel::Chip8Instruction>::new(),
             chip8_panel: panel::Panel::new(0, 0, CHIP8_HEIGHT_AFTER_SF, CHIP8_WIDTH_AFTER_SF),
             ram_panel: panel::Panel::new(0, CHIP8_HEIGHT_AFTER_SF + BORDER_RADIUS as u32, BOTTOM_PANEL_HEIGHT_NPIXELS, BOTTOM_PANEL_WIDTH_NPIXELS),
             stack_panel: panel::Panel::new(CHIP8_WIDTH_AFTER_SF + BORDER_RADIUS as u32, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
@@ -54,6 +56,13 @@ impl Gui {
         self.window.draw_2d(event, |_context, graphics| {
             pwindow::clear([1.0; 4], graphics);
         });
+    }
+
+    /// Adds a clear-chip8 instruction to the instruction buffer.
+    ///
+    /// The next time draw_chip8() is called, the screen will be cleared.
+    pub fn clear_chip8(&mut self) {
+        self.chip8_instruction_buffer.push(panel::Chip8Instruction::ClearScreen);
     }
 
     /// Draws the borders between the panels
@@ -83,7 +92,7 @@ impl Gui {
     /// function should get called once per emulation cycle, or perhaps only whenever
     /// anything has changed in the display.
     pub fn draw_chip8(&mut self, event: &pwindow::Event) {
-        self.chip8_panel.draw(panel::Context::Chip8{window: &mut self.window, event: event});
+        self.chip8_panel.draw(panel::Context::Chip8{window: &mut self.window, event: event, instructions: &self.chip8_instruction_buffer});
     }
 
     /// Draw the RAM around where the program counter is currently.
