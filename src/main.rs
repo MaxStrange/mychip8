@@ -122,5 +122,6 @@ mod tests {
             },
         }
         tx.send(EmulatorCommand::Exit).expect("Could not send");
+        emu.join().unwrap();
     }
 }
