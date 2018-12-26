@@ -114,7 +114,7 @@ mod tests {
     fn test_ret() {
         let (emu, tx, rx) = emulate(path::Path::new("testprograms/RET/rettest.bin"));
         tx.send(EmulatorCommand::PeekPC).expect("Could not send peekpc");
-        match rx.recv_timeout(time::Duration::new(1, 0)) {
+        match rx.recv_timeout(time::Duration::new(2, 0)) {
             Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
             Ok(response) => match response {
                 EmulatorResponse::PC(pc) => assert_eq!(pc, 0x0202),
