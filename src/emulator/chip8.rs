@@ -15,19 +15,25 @@ const MAX_PROGRAM_SIZE_NBYTES: usize = MEMORY_LENGTH_NBYTES - (PROGRAM_START_BYT
 const STACK_SIZE_N_ADDRS: usize = 16;
 
 /// The different commands the emulator understands. Used for debugging.
+#[derive(Debug)]
 pub enum EmulatorCommand {
     /// Exit the emulator thread.
     Exit,
     /// Peek from address to address + nbytes.
-    Peek(Address, usize),
+    PeekAddr(Address, usize),
+    /// Peek at the PC
+    PeekPC,
     /// Resume normal execution of the program.
     ResumeExecution,
 }
 
 /// The possible responses from the emulator in response to EmulatorCommands
+#[derive(Debug)]
 pub enum EmulatorResponse {
     /// Returns a bunch of bytes.
     MemorySlice(Vec<u8>),
+    /// Returns the current program counter.
+    PC(u16),
 }
 
 /// An address in RAM. RAM's address space can be described by 12 bits.
@@ -160,8 +166,13 @@ impl Chip8 {
 
             // Check the received command
             match cmd {
+                // Get the PC and return it
+                EmulatorCommand::PeekPC => {
+                    self.debugtx.send(EmulatorResponse::PC(self.pc)).unwrap();
+                },
+
                 // Get some bytes and return them
-                EmulatorCommand::Peek(addr, nbytes) => {
+                EmulatorCommand::PeekAddr(addr, nbytes) => {
                     let mut bytes = Vec::<u8>::new();
                     for i in 0..nbytes {
                         bytes.push(self.memory[(addr as usize + i) as usize]);

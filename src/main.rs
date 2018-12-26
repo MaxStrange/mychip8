@@ -91,6 +91,7 @@ mod tests {
     use super::*;
     use super::chip8::EmulatorCommand;
     use super::chip8::EmulatorResponse;
+    use std::time;
 
     /// SYS is a NOP, so really just test that nothing breaks.
     #[test]
@@ -106,5 +107,20 @@ mod tests {
         let (emu, tx, _rx) = emulate(path::Path::new("testprograms/CLS/clstest.bin"));
         tx.send(EmulatorCommand::Exit).expect("Could not send");
         emu.join().unwrap();
+    }
+
+    /// RET test. Go to a subroutine then return from it and make sure we break at the right place.
+    #[test]
+    fn test_ret() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/RET/rettest.bin"));
+        tx.send(EmulatorCommand::PeekPC).expect("Could not send peekpc");
+        match rx.recv_timeout(time::Duration::new(1, 0)) {
+            Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
+            Ok(response) => match response {
+                EmulatorResponse::PC(pc) => assert_eq!(pc, 0x0202),
+                _ => panic!("Response {:?} makes no sense...", response),
+            },
+        }
+        tx.send(EmulatorCommand::Exit).expect("Could not send");
     }
 }
