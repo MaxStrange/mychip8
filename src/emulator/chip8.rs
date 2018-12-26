@@ -41,6 +41,8 @@ type Address = u16;
 
 /// The Chip 8 emulator
 pub struct Chip8 {
+    /// Flag used in debugging to deterimine if the thread should exit
+    debug_should_exit: bool,
     /// Debug pipe receiving end
     debugrx: mpsc::Receiver<EmulatorCommand>,
     /// Debug pipe sending end
@@ -89,6 +91,7 @@ impl Chip8 {
     /// Create a new instance of the emulator.
     pub fn new(tx: mpsc::Sender<EmulatorResponse>, rx: mpsc::Receiver<EmulatorCommand>) -> Self {
         Chip8 {
+            debug_should_exit: false,
             debugrx: rx,
             debugtx: tx,
             memory: [0u8; MEMORY_LENGTH_NBYTES],
@@ -121,9 +124,14 @@ impl Chip8 {
         }
     }
 
-    /// Runs the emulator forever.
-    pub fn run(&mut self) -> ! {
+    /// Runs the emulator forever (or until a user debugs it and issues the exit command).
+    pub fn run(&mut self) {
         while let Some(pistonevent) = self.user_interface.next() {
+            // First check if we are being debugged and the user wants to exit
+            if self.debug_should_exit {
+                break;
+            }
+
             // Draw everything
             self.user_interface.clear(&pistonevent);
             self.user_interface.draw_chip8(&pistonevent);
@@ -155,8 +163,6 @@ impl Chip8 {
             // Increment PC
             self.pc += 2;
         }
-
-        std::process::exit(0);
     }
 
     /// Stop executing code and instead wait around on self.debugrx, executing debug commands we receive over the pipeline.
@@ -184,7 +190,7 @@ impl Chip8 {
                 EmulatorCommand::ResumeExecution => break,
 
                 // Exit the emulator thread
-                EmulatorCommand::Exit => std::process::exit(0),
+                EmulatorCommand::Exit => { self.debug_should_exit = true; break },
             }
         }
         Ok(())
