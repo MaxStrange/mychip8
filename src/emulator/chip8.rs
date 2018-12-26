@@ -16,6 +16,8 @@ const STACK_SIZE_N_ADDRS: usize = 16;
 
 /// The different commands the emulator understands. Used for debugging.
 pub enum EmulatorCommand {
+    /// Exit the emulator thread.
+    Exit,
     /// Peek from address to address + nbytes.
     Peek(Address, usize),
     /// Resume normal execution of the program.
@@ -58,16 +60,20 @@ pub struct Chip8 {
 impl fmt::Debug for Chip8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f, "Registers: {:?}", self.registers)?;
-        writeln!(f, "PC: {}", self.pc)?;
-        writeln!(f, "I: {}", self.index)?;
-        writeln!(f, "SP: {}", self.sp)?;
+        writeln!(f, "PC: 0x{:2x}", self.pc)?;
+        writeln!(f, "I: 0x{:2x}", self.index)?;
+        writeln!(f, "SP: 0x{:2x}", self.sp)?;
         writeln!(f, "Stack:")?;
         for (idx, item) in self.stack.iter().enumerate() {
             writeln!(f, "  {}: {:x}", idx, item)?;
         }
-        writeln!(f, "Sample of memory (0x0210 to 0x021F):")?;
-        for i in 0x0210..=0x021F {
-            writeln!(f, "  {:x}: {:x}", i, self.memory[i])?;
+
+        // Examine the memory around the PC
+        let low: usize = std::cmp::max(0, ((self.pc as isize) - 10) as usize);
+        let high: usize = std::cmp::min(MEMORY_LENGTH_NBYTES - 1, (self.pc as usize) + 10);
+        writeln!(f, "Sample of memory around PC: (0x{:2x} to 0x{:2x}):", low, high)?;
+        for i in low..=high {
+            writeln!(f, "  0x{:2x}: 0x{:x}", i, self.memory[i])?;
         }
         Ok(())
     }
@@ -128,7 +134,7 @@ impl Chip8 {
             let opcode = match Opcode::new(instruction) {
                 Ok(o) => o,
                 Err(msg) => {
-                    panic!("Problem with instruction {:x}: {}. State of us: {:?}", instruction, msg, self)
+                    panic!("Problem with instruction {:x}: {}. State of us:\n{:?}", instruction, msg, self)
                 },
             };
 
@@ -136,12 +142,12 @@ impl Chip8 {
             match self.execute(opcode) {
                 Ok(()) => (),
                 Err(msg) => {
-                    panic!("Problem executing instruction {:?}: {}. State of us: {:?}", opcode, msg, self)
+                    panic!("Problem executing instruction {:?}: {}. State of us:\n{:?}", opcode, msg, self)
                 },
             }
 
             // Increment PC
-            self.pc += 1;
+            self.pc += 2;
         }
 
         std::process::exit(0);
@@ -165,6 +171,9 @@ impl Chip8 {
 
                 // Break from the BRK loop
                 EmulatorCommand::ResumeExecution => break,
+
+                // Exit the emulator thread
+                EmulatorCommand::Exit => std::process::exit(0),
             }
         }
         Ok(())

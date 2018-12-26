@@ -14,6 +14,50 @@ use std::path;
 use std::process;
 use std::thread;
 
+/// Creates an emulator thread and returns it along with the pipe to and from it.
+pub fn emulate(progpath: &path::Path) -> (thread::JoinHandle<()>, mpsc::Sender<chip8::EmulatorCommand>, mpsc::Receiver<chip8::EmulatorResponse>) {
+    // Load the contents from the file
+    let mut contents = match fs::File::open(progpath) {
+        Ok(b) => b,
+        Err(e) => {
+            println!("Problem opening file at location {}: {:?}", progpath.to_str().unwrap(), e);
+            process::exit(2);
+        },
+    };
+
+    // Read the contents into a bufer of bytes
+    let mut binary = Vec::<u8>::new();
+    match contents.read_to_end(&mut binary) {
+        Ok(_nbytes) => (),
+        Err(e) => {
+            println!("Could not read the contents of the file into a vector: {:?}", e);
+        },
+    }
+
+    // Make some pipes. Use these for debugging and in the test rig.
+    let (mytx, yourrx): (mpsc::Sender<chip8::EmulatorCommand>, mpsc::Receiver<chip8::EmulatorCommand>) = mpsc::channel();
+    let (yourtx, myrx): (mpsc::Sender<chip8::EmulatorResponse>, mpsc::Receiver<chip8::EmulatorResponse>) = mpsc::channel();
+
+    // Spawn an emulator. We can send it commands while it is running. Useful for debugging.
+    let emuthread = thread::spawn(move || {
+        // Create and initialize a Chip 8 instance
+        let mut emu = chip8::Chip8::new(yourtx, yourrx);
+
+        // Load the program into memory
+        match emu.load(&binary) {
+            Ok(()) => (),
+            Err(s) => {
+                println!("Could not load binary: {}", s);
+                process::exit(3);
+            },
+        }
+
+        emu.run();
+    });
+
+    (emuthread, mytx, myrx)
+}
+
 fn main() {
     // Check args for a valid file
     let matches = clap::App::new("Chip 8 Emulator")
@@ -36,44 +80,31 @@ fn main() {
         process::exit(1);
     }
 
-    // Load the contents from the file
-    let mut contents = match fs::File::open(progpath) {
-        Ok(b) => b,
-        Err(e) => {
-            println!("Problem opening file at location {}: {:?}", progpath.to_str().unwrap(), e);
-            process::exit(2);
-        },
-    };
-
-    // Read the contents into a bufer of bytes
-    let mut binary = Vec::<u8>::new();
-    match contents.read_to_end(&mut binary) {
-        Ok(_nbytes) => (),
-        Err(e) => {
-            println!("Could not read the contents of the file into a vector: {:?}", e);
-        },
-    }
-
-    // Make some pipes. Use these for debugging and in the test rig.
-    let (_mytx, yourrx): (mpsc::Sender<chip8::EmulatorCommand>, mpsc::Receiver<chip8::EmulatorCommand>) = mpsc::channel();
-    let (yourtx, _myrx): (mpsc::Sender<chip8::EmulatorResponse>, mpsc::Receiver<chip8::EmulatorResponse>) = mpsc::channel();
-
-    // Spawn an emulator. We can send it commands while it is running. Useful for debugging.
-    let emuthread = thread::spawn(move || {
-        // Create and initialize a Chip 8 instance
-        let mut emu = chip8::Chip8::new(yourtx, yourrx);
-
-        // Load the program into memory
-        match emu.load(&binary) {
-            Ok(()) => (),
-            Err(s) => {
-                println!("Could not load binary: {}", s);
-                process::exit(3);
-            },
-        }
-
-        emu.run();
-    });
+    // _mytx and _myrx are used in testing, not in main
+    let (emuthread, _mytx, _myrx) = emulate(&progpath);
 
     emuthread.join().expect("Did not join emu thread correctly.");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::chip8::EmulatorCommand;
+    use super::chip8::EmulatorResponse;
+
+    /// SYS is a NOP, so really just test that nothing breaks.
+    #[test]
+    fn test_sys() {
+        let (emu, tx, _rx) = emulate(path::Path::new("testprograms/SYS/systest.bin"));
+        tx.send(EmulatorCommand::Exit).expect("Could not send");
+        emu.join().unwrap();
+    }
+
+    /// CLS is not really testable from this test harness - requires manual oversight. Included here to make sure it doesn't break things.
+    #[test]
+    fn test_cls() {
+        let (emu, tx, _rx) = emulate(path::Path::new("testprograms/CLS/clstest.bin"));
+        tx.send(EmulatorCommand::Exit).expect("Could not send");
+        emu.join().unwrap();
+    }
 }
