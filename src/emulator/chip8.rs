@@ -240,7 +240,7 @@ impl Chip8 {
             write!(errmsg, "Address {} is larger than the memory.", addr).unwrap();
             Err(errmsg)
         } else {
-            self.pc = self.memory[addr as usize] as u16;
+            self.pc = addr;
             Ok(())
         }
     }

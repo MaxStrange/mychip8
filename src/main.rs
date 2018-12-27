@@ -114,10 +114,26 @@ mod tests {
     fn test_ret() {
         let (emu, tx, rx) = emulate(path::Path::new("testprograms/RET/rettest.bin"));
         tx.send(EmulatorCommand::PeekPC).expect("Could not send peekpc");
-        match rx.recv_timeout(time::Duration::new(2, 0)) {
+        match rx.recv_timeout(time::Duration::new(4, 0)) {
             Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
             Ok(response) => match response {
                 EmulatorResponse::PC(pc) => assert_eq!(pc, 0x0202),
+                _ => panic!("Response {:?} makes no sense...", response),
+            },
+        }
+        tx.send(EmulatorCommand::Exit).expect("Could not send");
+        emu.join().unwrap_or(());
+    }
+
+    /// JP test. Jump to a specific address and break. Check PC.
+    #[test]
+    fn test_jp() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/JP/jptest.bin"));
+        tx.send(EmulatorCommand::PeekPC).expect("Could not send peekpc");
+        match rx.recv_timeout(time::Duration::new(4, 0)) {
+            Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
+            Ok(response) => match response {
+                EmulatorResponse::PC(pc) => assert_eq!(pc, 0x020A),
                 _ => panic!("Response {:?} makes no sense...", response),
             },
         }
