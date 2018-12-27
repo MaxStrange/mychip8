@@ -14,6 +14,9 @@ const MAX_PROGRAM_SIZE_NBYTES: usize = MEMORY_LENGTH_NBYTES - (PROGRAM_START_BYT
 /// There are this many addresses in the special stack array at most.
 const STACK_SIZE_N_ADDRS: usize = 16;
 
+/// In this module, most functions return an EmuResult, which returns either an error message or the number the PC should be incremented by.
+type EmuResult = Result<usize, String>;
+
 /// The different commands the emulator understands. Used for debugging.
 #[derive(Debug)]
 pub enum EmulatorCommand {
@@ -23,6 +26,10 @@ pub enum EmulatorCommand {
     PeekAddr(Address, usize),
     /// Peek at the PC
     PeekPC,
+    /// Peek at the SP
+    PeekSP,
+    /// Peek at the whole stack.
+    PeekStack,
     /// Resume normal execution of the program.
     ResumeExecution,
 }
@@ -34,6 +41,10 @@ pub enum EmulatorResponse {
     MemorySlice(Vec<u8>),
     /// Returns the current program counter.
     PC(u16),
+    /// Returns the current stack pointer.
+    SP(u8),
+    /// Returns the current stack.
+    Stack(Vec<u16>),
 }
 
 /// An address in RAM. RAM's address space can be described by 12 bits.
@@ -152,21 +163,18 @@ impl Chip8 {
                 },
             };
 
-            // Execute instruction
+            // Execute instruction and increment the PC
             match self.execute(opcode) {
-                Ok(()) => (),
+                Ok(pcincr) => self.pc += pcincr as u16,
                 Err(msg) => {
                     panic!("Problem executing instruction {:?}: {}. State of us:\n{:?}", opcode, msg, self)
                 },
             }
-
-            // Increment PC
-            self.pc += 2;
         }
     }
 
     /// Stop executing code and instead wait around on self.debugrx, executing debug commands we receive over the pipeline.
-    fn execute_brk(&mut self) -> Result<(), String> {
+    fn execute_brk(&mut self) -> EmuResult {
         // Sit around waiting for debug commands
         while let Ok(cmd) = self.debugrx.recv() {
 
@@ -186,6 +194,16 @@ impl Chip8 {
                     self.debugtx.send(EmulatorResponse::MemorySlice(bytes)).unwrap();
                 },
 
+                // Send back the SP
+                EmulatorCommand::PeekSP => {
+                    self.debugtx.send(EmulatorResponse::SP(self.sp)).unwrap();
+                },
+
+                // Peek at the whole stack
+                EmulatorCommand::PeekStack => {
+                    self.debugtx.send(EmulatorResponse::Stack(self.stack.clone().to_vec())).unwrap();
+                },
+
                 // Break from the BRK loop
                 EmulatorCommand::ResumeExecution => break,
 
@@ -193,7 +211,7 @@ impl Chip8 {
                 EmulatorCommand::Exit => { self.debug_should_exit = true; break },
             }
         }
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a SYS instruction.
@@ -201,47 +219,47 @@ impl Chip8 {
     /// The SYS instruction jumps to a machine code routine at the given address.
     /// This instruction is only used on the old computers on which Chip-8 was originally
     /// implemented. It is ignored by modern interpreters.
-    fn execute_sys(&mut self, _addr: Address) -> Result<(), String> {
+    fn execute_sys(&mut self, _addr: Address) -> EmuResult {
         // Does nothing - NOP
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a CLS instruction.
     ///
     /// Clears the display.
-    fn execute_cls(&mut self) -> Result<(), String> {
+    fn execute_cls(&mut self) -> EmuResult {
         self.user_interface.clear_chip8();
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a RET instruction.
     ///
     /// Sets the program counter to the address at the top of the stack,
     /// then subtracts one from the stack pointer.
-    fn execute_ret(&mut self) -> Result<(), String> {
+    fn execute_ret(&mut self) -> EmuResult {
         if self.sp as usize >= self.stack.len() {
             let mut errmsg = String::new();
             write!(errmsg, "Stack pointer ({}) is too big.", self.sp).unwrap();
             Err(errmsg)
         } else {
-            self.pc = self.stack[self.sp as usize];
             self.sp -= 1;
-            Ok(())
+            self.pc = self.stack[self.sp as usize];
+            Ok(2)
         }
     }
 
     /// Executes a JP instruction.
     ///
     /// Sets the program counter to the given address.
-    fn execute_jp(&mut self, addr: Address) -> Result<(), String> {
+    fn execute_jp(&mut self, addr: Address) -> EmuResult {
         if addr as usize >= self.memory.len() {
             let mut errmsg = String::new();
             write!(errmsg, "Address {} is larger than the memory.", addr).unwrap();
             Err(errmsg)
         } else {
             self.pc = addr;
-            Ok(())
+            Ok(0)
         }
     }
 
@@ -249,16 +267,16 @@ impl Chip8 {
     ///
     /// Increments the stack pointer, puts the current program counter on top of the stack,
     /// then sets the program counter to the given address.
-    fn execute_call(&mut self, addr: Address) -> Result<(), String> {
+    fn execute_call(&mut self, addr: Address) -> EmuResult {
         if (self.sp + 1) as usize >= self.stack.len() {
             let mut errmsg = String::new();
             write!(errmsg, "Stack pointer ({}) is greater than the length of the stack.", self.sp).unwrap();
             Err(errmsg)
         } else {
-            self.sp += 1;
             self.stack[self.sp as usize] = self.pc;
+            self.sp += 1;
             self.pc = addr;
-            Ok(())
+            Ok(0)
         }
     }
 
@@ -266,40 +284,41 @@ impl Chip8 {
     ///
     /// If the contents of register Vx equal `byte`, the program counter is incremented
     /// by 2 (in other words, we skip the next instruction).
-    fn execute_sevxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
+    fn execute_sevxbyte(&mut self, x: Register, byte: u8) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
         if vx == byte {
-            self.pc += 2;
+            Ok(4)
+        } else {
+            Ok(2)
         }
-
-        Ok(())
     }
 
     /// Executes an SNE instruction on register `x` and byte `byte`.
     ///
     /// If the contents of register Vx do NOT equal `byte`, the program counter is incremented
     /// by 2 (in other words, we skip the next instruction).
-    fn execute_snevxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
+    fn execute_snevxbyte(&mut self, x: Register, byte: u8) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
         if vx != byte {
-            self.pc += 2;
+            Ok(4)
+        } else {
+            Ok(2)
         }
-
-        Ok(())
     }
+
     /// Executes an SNE instruction on registers `x` and `y`.
     ///
     /// The values of Vx and Vy are compared and if they are equal, the program counter is
     /// incremented by 2.
-    fn execute_sevxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_sevxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -311,16 +330,16 @@ impl Chip8 {
         };
 
         if vx == vy {
-            self.pc += 2;
+            Ok(4)
+        } else {
+            Ok(2)
         }
-
-        Ok(())
     }
 
     /// Executes an LD instruction on register `x` and byte `byte`.
     ///
     /// Stores the given byte in register `x`.
-    fn execute_ldvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
+    fn execute_ldvxbyte(&mut self, x: Register, byte: u8) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
@@ -328,13 +347,13 @@ impl Chip8 {
 
         *vx = byte;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an ADD instruction on register `x` and byte `byte`.
     ///
     /// Adds the value `byte` to the contents of register Vx, then stores the result in Vx.
-    fn execute_addvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
+    fn execute_addvxbyte(&mut self, x: Register, byte: u8) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
@@ -342,13 +361,13 @@ impl Chip8 {
 
         *vx += byte;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes aLD instruction on registers `x` and `y`.
     ///
     /// Stores the value of register Vy in register Vx.
-    fn execute_ldvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_ldvxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -361,13 +380,13 @@ impl Chip8 {
 
         *vx = vy;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an OR instruction on registers `x` and `y`.
     ///
     /// Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
-    fn execute_orvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_orvxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -380,13 +399,13 @@ impl Chip8 {
 
         *vx = *vx | vy;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an AND instruction on registers `x` and `y`.
     ///
     /// Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
-    fn execute_andvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_andvxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -399,13 +418,13 @@ impl Chip8 {
 
         *vx = *vx & vy;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an XOR instruction on registers `x` and `y`.
     ///
     /// Performs a bitwise XOR on the values of Vx and Vy, then stores the result in Vx.
-    fn execute_xorvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_xorvxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -418,7 +437,7 @@ impl Chip8 {
 
         *vx = *vx ^ vy;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an ADD instruction on registers `x` and `y`.
@@ -426,7 +445,7 @@ impl Chip8 {
     /// Adds the value in the register `y` to the value of register `x`, then stores the result in register `x`.
     /// If the result is greater than 255, VF is set to 1, otherwise it is set to 0.
     /// Only the lowest 8 bits are stored in Vx.
-    fn execute_addvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_addvxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -447,14 +466,14 @@ impl Chip8 {
             self.registers.vf = 0;
         }
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a SUB instruction on registers `x` and `y`.
     ///
     /// If Vx > Vy, then VF is set to 1, otherwise set it to 0. Then Vy is subtracted from Vx
     /// and the result is stored in Vx.
-    fn execute_subvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_subvxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -475,14 +494,14 @@ impl Chip8 {
             self.registers.vf = 0;
         }
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a SHR instruction on register `x`.
     ///
     /// If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is
     /// bit shifted right by one (in other words, Vx is divided by 2).
-    fn execute_shrvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_shrvx(&mut self, x: Register) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
@@ -496,14 +515,14 @@ impl Chip8 {
             self.registers.vf = 0;
         }
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a SUBN instruction on registers `x` and `y`.
     ///
     /// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy
     /// and the result is stored in Vx.
-    fn execute_subnvxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_subnvxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -524,14 +543,14 @@ impl Chip8 {
             self.registers.vf = 0;
         }
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a SHL instruction on register `x`.
     ///
     /// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is shifted
     /// left by one bit (in other words, Vx is multiplied by 2).
-    fn execute_shlvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_shlvx(&mut self, x: Register) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
@@ -545,14 +564,14 @@ impl Chip8 {
             self.registers.vf = 0;
         }
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an SNE instruction on registers `x` and `y`.
     ///
     /// The values of Vx and Vy are compared and if they are NOT equal, the program counter is
     /// incremented by 2.
-    fn execute_snevxvy(&mut self, x: Register, y: Register) -> Result<(), String> {
+    fn execute_snevxvy(&mut self, x: Register, y: Register) -> EmuResult {
         let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -567,27 +586,27 @@ impl Chip8 {
             self.pc += 2;
         }
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a LD instruction on register I and `addr`.
     ///
     /// The value of regsiter I is set to the value at RAM address `addr`.
-    fn execute_ldiaddr(&mut self, addr: Address) -> Result<(), String> {
+    fn execute_ldiaddr(&mut self, addr: Address) -> EmuResult {
         if addr as usize >= MEMORY_LENGTH_NBYTES {
             let mut msg = String::new();
             write!(msg, "Address {} is out of range of the RAM.", addr).unwrap();
             Err(msg)
         } else {
             self.index = self.memory[addr as usize] as u16;
-            Ok(())
+            Ok(2)
         }
     }
 
     /// Executes a JP instruction on V0 and `addr`.
     ///
     /// The program counter is set to `addr` plus the value of V0.
-    fn execute_jpv0addr(&mut self, addr: Address) -> Result<(), String> {
+    fn execute_jpv0addr(&mut self, addr: Address) -> EmuResult {
         let mut msg = String::new();
         if addr as usize > MEMORY_LENGTH_NBYTES {
             write!(msg, "Address {} is out of range of the RAM.", addr).unwrap();
@@ -597,7 +616,7 @@ impl Chip8 {
             Err(msg)
         } else {
             self.pc = addr + self.registers.v0 as u16;
-            Ok(())
+            Ok(2)
         }
     }
 
@@ -605,7 +624,7 @@ impl Chip8 {
     ///
     /// Generate a random number in the interval [0, 255], which is then ANDed with the value
     /// `byte`. The results are stored in Vx.
-    fn execute_rndvxbyte(&mut self, x: Register, byte: u8) -> Result<(), String> {
+    fn execute_rndvxbyte(&mut self, x: Register, byte: u8) -> EmuResult {
         let mut rng = thread_rng();
         let result = byte & rng.gen_range(0, 256) as u8;
 
@@ -616,7 +635,7 @@ impl Chip8 {
 
         *vx = result;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a DRW instruction on registers `x` and `y` and nibble `byte`.
@@ -626,7 +645,7 @@ impl Chip8 {
     /// screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0.
     /// If the sprite is positioned so part of it is outside the coordinates of the display, it wraps
     /// around to the opposite side of the screen.
-    fn execute_drwvxvynibble(&mut self, x: Register, y: Register, byte: u8) -> Result<(), String> {
+    fn execute_drwvxvynibble(&mut self, x: Register, y: Register, byte: u8) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -662,7 +681,7 @@ impl Chip8 {
     ///
     /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
     /// in the down position, the program counter is increased by 2.
-    fn execute_skpvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_skpvx(&mut self, x: Register) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -677,7 +696,7 @@ impl Chip8 {
     ///
     /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
     /// in the up position, the program counter is increased by 2.
-    fn execute_sknpvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_sknpvx(&mut self, x: Register) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -691,7 +710,7 @@ impl Chip8 {
     /// Executes a LD instruction on register `x` from the delay timer.
     ///
     /// The value of the delay timer is placed into Vx.
-    fn execute_ldvxdt(&mut self, x: Register) -> Result<(), String> {
+    fn execute_ldvxdt(&mut self, x: Register) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
@@ -706,7 +725,7 @@ impl Chip8 {
     ///
     /// All execution stops until a key is pressed, then the value of that key
     /// is stored in Vx.
-    fn execute_ldvxk(&mut self, x: Register) -> Result<(), String> {
+    fn execute_ldvxk(&mut self, x: Register) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
@@ -720,7 +739,7 @@ impl Chip8 {
     /// Executes a LD instruction on the delay timer and register `x`.
     ///
     /// The delay timer is set equal to the value of Vx.
-    fn execute_lddtvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_lddtvx(&mut self, x: Register) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -734,7 +753,7 @@ impl Chip8 {
     /// Executes a LD instruction on the sound timer and register `x`.
     ///
     /// The sound timer is set to the value of Vx.
-    fn execute_ldstvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_ldstvx(&mut self, x: Register) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -748,7 +767,7 @@ impl Chip8 {
     /// Executes an ADD instruction on I and `x`.
     ///
     /// The values of I and Vx are added, and the result is stored in I.
-    fn execute_addivx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_addivx(&mut self, x: Register) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -756,14 +775,14 @@ impl Chip8 {
 
         self.index += vx as u16;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes a sprite LD instruction.
     ///
     /// The value of I is set to the location of the hexadecimal sprite
     /// corresponding to the value of Vx.
-    fn execute_ldfvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_ldfvx(&mut self, x: Register) -> EmuResult {
         let _vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -779,7 +798,7 @@ impl Chip8 {
     /// Takes the decimal value of Vx and places the hundreds digit in
     /// memory at location I, the tens digit at location I+1, and the
     /// ones digit at location I+2.
-    fn execute_ldbvx(&mut self, x: Register) -> Result<(), String> {
+    fn execute_ldbvx(&mut self, x: Register) -> EmuResult {
         let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
@@ -806,14 +825,14 @@ impl Chip8 {
         self.memory[(self.index + 1) as usize] = tens;
         self.memory[(self.index + 2) as usize] = ones;
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an array LD instruction for writing.
     ///
     /// Copies the values of registers V0 through Vx into memory,
     /// starting at the address in I.
-    fn execute_ldivx(&mut self, regx_index: Register) -> Result<(), String> {
+    fn execute_ldivx(&mut self, regx_index: Register) -> EmuResult {
         let mut msg = String::new();
         if self.index as usize >= MEMORY_LENGTH_NBYTES {
             write!(msg, "Address {} is too large for RAM.", self.index).unwrap();
@@ -837,14 +856,14 @@ impl Chip8 {
             self.memory[(self.index + idx as u16) as usize] = *reg;
         }
 
-        Ok(())
+        Ok(2)
     }
 
     /// Executes an array LD instruction for reading.
     ///
     /// Reads values from memory starting at location I into
     /// registers V0 through Vx.
-    fn execute_ldvxi(&mut self, regx_index: Register) -> Result<(), String> {
+    fn execute_ldvxi(&mut self, regx_index: Register) -> EmuResult {
         let mut msg = String::new();
         if self.index as usize >= MEMORY_LENGTH_NBYTES {
             write!(msg, "Address {} is too large for RAM.", self.index).unwrap();
@@ -869,10 +888,10 @@ impl Chip8 {
             *reg = tmp;
         }
 
-        Ok(())
+        Ok(2)
     }
 
-    fn execute(&mut self, op: Opcode) -> Result<(), String> {
+    fn execute(&mut self, op: Opcode) -> EmuResult {
         match op {
             Opcode::BRK => self.execute_brk(),
             Opcode::SYS(addr) => self.execute_sys(addr),

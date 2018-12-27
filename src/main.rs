@@ -93,51 +93,100 @@ mod tests {
     use super::chip8::EmulatorResponse;
     use std::time;
 
+    /// Handles getting the response from the RX pipe, dealing with timeouts and errors as appropriate.
+    fn get_response(rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
+        match rx.recv_timeout(time::Duration::new(4, 0)) {
+            Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
+            Ok(response) => response,
+        }
+    }
+
+    /// Sends the given `msg`, then waits to hear back and returns the response.
+    fn send_and_receive(msg: EmulatorCommand, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
+        tx.send(msg).expect("Could not send.");
+        get_response(rx)
+    }
+
+    /// Sends the exit command and then joins with the emulator thread.
+    fn exit_and_join(emu: thread::JoinHandle<()>, tx: &mpsc::Sender<EmulatorCommand>) {
+        tx.send(EmulatorCommand::Exit).expect("Could not send exit signal.");
+        emu.join().unwrap_or(());
+    }
+
+    /// Asserts that the PC is at the given location.
+    fn assert_pc(pc: u16, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekPC, tx, rx) {
+            EmulatorResponse::PC(received_pc) => assert_eq!(received_pc, pc),
+            response => panic!("Response {:?} makes no sense...", response),
+        }
+    }
+
+    /// Asserts that the stack item at `stackidx` is equal to `stackitem`.
+    fn assert_stack_item(stackidx: usize, stackitem: u16, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekStack, tx, rx) {
+            EmulatorResponse::Stack(stack) => assert_eq!(stack[stackidx], stackitem),
+            response => panic!("Response {:?} makes no sense...", response),
+        }
+    }
+
+    /// Asserts that the stack pointer is at the given location.
+    fn assert_sp(sp: u8, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekSP, tx, rx) {
+            EmulatorResponse::SP(received_sp) => assert_eq!(received_sp, sp),
+            response => panic!("Response {:?} makes no sense...", response),
+        }
+    }
+
     /// SYS is a NOP, so really just test that nothing breaks.
     #[test]
     fn test_sys() {
         let (emu, tx, _rx) = emulate(path::Path::new("testprograms/SYS/systest.bin"));
-        tx.send(EmulatorCommand::Exit).expect("Could not send");
-        emu.join().unwrap_or(());
+        exit_and_join(emu, &tx);
     }
 
     /// CLS is not really testable from this test harness - requires manual oversight. Included here to make sure it doesn't break things.
     #[test]
     fn test_cls() {
         let (emu, tx, _rx) = emulate(path::Path::new("testprograms/CLS/clstest.bin"));
-        tx.send(EmulatorCommand::Exit).expect("Could not send");
-        emu.join().unwrap_or(());
+        exit_and_join(emu, &tx);
     }
 
     /// RET test. Go to a subroutine then return from it and make sure we break at the right place.
     #[test]
     fn test_ret() {
         let (emu, tx, rx) = emulate(path::Path::new("testprograms/RET/rettest.bin"));
-        tx.send(EmulatorCommand::PeekPC).expect("Could not send peekpc");
-        match rx.recv_timeout(time::Duration::new(4, 0)) {
-            Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
-            Ok(response) => match response {
-                EmulatorResponse::PC(pc) => assert_eq!(pc, 0x0202),
-                _ => panic!("Response {:?} makes no sense...", response),
-            },
-        }
-        tx.send(EmulatorCommand::Exit).expect("Could not send");
-        emu.join().unwrap_or(());
+
+        // Check that PC is at correct location
+        assert_pc(0x0202, &tx, &rx);
+
+        exit_and_join(emu, &tx);
     }
 
     /// JP test. Jump to a specific address and break. Check PC.
     #[test]
     fn test_jp() {
         let (emu, tx, rx) = emulate(path::Path::new("testprograms/JP/jptest.bin"));
-        tx.send(EmulatorCommand::PeekPC).expect("Could not send peekpc");
-        match rx.recv_timeout(time::Duration::new(4, 0)) {
-            Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
-            Ok(response) => match response {
-                EmulatorResponse::PC(pc) => assert_eq!(pc, 0x020A),
-                _ => panic!("Response {:?} makes no sense...", response),
-            },
-        }
-        tx.send(EmulatorCommand::Exit).expect("Could not send");
-        emu.join().unwrap_or(());
+
+        // Check that PC is at correct location
+        assert_pc(0x020A, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
+
+    /// CALL test. Jump to an address and break. Check PC and stack.
+    #[test]
+    fn test_call() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/CALL/calltest.bin"));
+
+        // Check that PC is at correct location
+        assert_pc(0x020A, &tx, &rx);
+
+        // Check that the first item in the stack is correct.
+        assert_stack_item(0, 0x0204, &tx, &rx);
+
+        // Check that the stack pointer is correct
+        assert_sp(1, &tx, &rx);
+
+        exit_and_join(emu, &tx);
     }
 }
