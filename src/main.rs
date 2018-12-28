@@ -245,4 +245,32 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test LDVxByte instruction by loading each general purpose register with a known value and checking them.
+    #[test]
+    fn test_ldvxybyte() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/LDVxByte/ldvxbytetest.bin"));
+
+        // Check that the PC is where we expect
+        assert_pc(0x021E, &tx, &rx);
+
+        /* Now check all the registers */
+        assert_register(0, 0x25, &tx, &rx);
+        assert_register(1, 0x0A, &tx, &rx);
+        assert_register(2, 0xCC, &tx, &rx);
+        assert_register(3, 0xFF, &tx, &rx);
+        assert_register(4, 0x10, &tx, &rx);
+        assert_register(5, 0x11, &tx, &rx);
+        assert_register(6, 0x22, &tx, &rx);
+        assert_register(7, 0x23, &tx, &rx);
+        assert_register(8, 0x85, &tx, &rx);
+        assert_register(9, 0x09, &tx, &rx);
+        assert_register(10, 0xAE, &tx, &rx);
+        assert_register(11, 0x0E, &tx, &rx);
+        assert_register(12, 0x44, &tx, &rx);
+        assert_register(13, 0x35, &tx, &rx);
+        assert_register(14, 0x15, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }
