@@ -26,6 +26,8 @@ pub enum EmulatorCommand {
     PeekAddr(Address, usize),
     /// Peek at the PC
     PeekPC,
+    /// Peek at the given register
+    PeekReg(u8),
     /// Peek at the SP
     PeekSP,
     /// Peek at the whole stack.
@@ -41,6 +43,8 @@ pub enum EmulatorResponse {
     MemorySlice(Vec<u8>),
     /// Returns the current program counter.
     PC(u16),
+    /// Returns the contents of a register.
+    Reg(u8),
     /// Returns the current stack pointer.
     SP(u8),
     /// Returns the current stack.
@@ -192,6 +196,15 @@ impl Chip8 {
                         bytes.push(self.memory[(addr as usize + i) as usize]);
                     }
                     self.debugtx.send(EmulatorResponse::MemorySlice(bytes)).unwrap();
+                },
+
+                // Get the contents of a register
+                EmulatorCommand::PeekReg(regidx) => {
+                    let regval = match self.get_register(regidx) {
+                        Ok(r) => *r,
+                        Err(e) => panic!("Could not get requested register {}: {}", regidx, e),
+                    };
+                    self.debugtx.send(EmulatorResponse::Reg(regval)).unwrap();
                 },
 
                 // Send back the SP

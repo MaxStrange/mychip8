@@ -137,6 +137,14 @@ mod tests {
         }
     }
 
+    /// Asserts that the contents of the given register are equal to the given contents.
+    fn assert_register(regidx: u8, regval: u8, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekReg(regidx), tx, rx) {
+            EmulatorResponse::Reg(received_regval) => assert_eq!(received_regval, regval),
+            response => panic!("Response {:?} makes no sense...", response),
+        }
+    }
+
     /// SYS is a NOP, so really just test that nothing breaks.
     #[test]
     fn test_sys() {
@@ -186,6 +194,21 @@ mod tests {
 
         // Check that the stack pointer is correct
         assert_sp(1, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test that the SEVxByte instruction works by loading a value into a register, then comparing a byte with that register
+    /// and seeing if we break at the appropriate place.
+    #[test]
+    fn test_sevxbyte() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SEVxByte/sevxbytetest.bin"));
+
+        // Check that the PC is at correct location
+        assert_pc(0x020C, &tx, &rx);
+
+        // Check that register V3 has the expected value
+        assert_register(3, 0x23, &tx, &rx);
 
         exit_and_join(emu, &tx);
     }

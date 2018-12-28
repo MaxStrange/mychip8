@@ -9,6 +9,6 @@ with open("calltest.bin", 'wb') as f:
     f.write(brk)   # 0x0206
     f.write(brk)   # 0x0208
     f.write(brk)   # 0x020A
-    f.write(brk)   # 0x020B
-    f.write(ret)   # 0x020C
-    f.write(nop)   # 0x020D
+    f.write(brk)   # 0x020C
+    f.write(ret)   # 0x020E
+    f.write(nop)   # 0x0210

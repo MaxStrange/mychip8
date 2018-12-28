@@ -8,6 +8,6 @@ with open("jptest.bin", 'wb') as f:
     f.write(nop)   # 0x0206
     f.write(nop)   # 0x0208
     f.write(brk)   # 0x020A  <-- program should break here
-    f.write(brk)   # 0x020B  <-- program will break here at the very least
-    f.write(brk)   # 0x020C  <-- or here
-    f.write(nop)   # 0x020D
+    f.write(brk)   # 0x020C  <-- program will break here at the very least
+    f.write(brk)   # 0x020E  <-- or here
+    f.write(nop)   # 0x0210
