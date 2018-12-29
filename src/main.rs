@@ -95,7 +95,7 @@ mod tests {
 
     /// Handles getting the response from the RX pipe, dealing with timeouts and errors as appropriate.
     fn get_response(rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
-        match rx.recv_timeout(time::Duration::new(4, 0)) {
+        match rx.recv_timeout(time::Duration::new(6, 0)) {
             Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
             Ok(response) => response,
         }
@@ -270,6 +270,17 @@ mod tests {
         assert_register(12, 0x44, &tx, &rx);
         assert_register(13, 0x35, &tx, &rx);
         assert_register(14, 0x15, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test ADDVxByte instruction.
+    #[test]
+    fn test_addvxbyte() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/ADDVxByte/addvxbytetest.bin"));
+
+        // Check that the register is what we expect it should be
+        assert_register(10, 0x67, &tx, &rx);
 
         exit_and_join(emu, &tx);
     }
