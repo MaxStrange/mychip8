@@ -298,4 +298,15 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test the ORVxVy instruction.
+    #[test]
+    fn test_orvxvy() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/ORVxVy/orvxvytest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x0E | 0x03, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }
