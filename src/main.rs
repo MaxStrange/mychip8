@@ -284,4 +284,18 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test LDVxVy instruction.
+    #[test]
+    fn test_ldvxvy() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/LDVxVy/ldvxvytest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x02, &tx, &rx);
+
+        // Check register VD
+        assert_register(10, 0x02, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }
