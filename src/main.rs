@@ -309,4 +309,15 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test the ANDVxVy instruction.
+    #[test]
+    fn test_andvxvy() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/ANDVxVy/andvxvytest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x0E & 0x03, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }
