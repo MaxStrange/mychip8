@@ -400,4 +400,27 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test SUBVNxVy with borrow/no-borrow.
+    #[test]
+    fn test_subnvxvy() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SUBNVxVy/subnvxvytest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x0B, &tx, &rx);
+
+        // Check no borrow in VF
+        assert_register(15, 0x00, &tx, &rx);
+
+        // Continue to next break point
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send");
+
+        // Check register VB
+        assert_register(11, 0xDD, &tx, &rx);
+
+        // Check borrow in VF
+        assert_register(15, 0x01, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }

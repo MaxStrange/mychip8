@@ -14,7 +14,7 @@ with open("subvxvytest.bin", 'wb') as f:
     f.write(ldb)   # 0x0208  <-- Load the byte 0x0D into register VB
     f.write(ldc)   # 0x020A  <-- Load the byte 0xEA into register VC
     f.write(sub2)  # 0x020C  <-- Store VB - VC in VB => (0x0D - 0xEA)
-    f.write(brk)   # 0x020E  <-- Break here to check if VB == 0xE7 and VF == 0
+    f.write(brk)   # 0x020E  <-- Break here to check if VB == 0xDD and VF == 0
 
 # 0x0E = 0b0000 1110
 # 0x03 = 0b0000 0011
