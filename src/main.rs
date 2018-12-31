@@ -320,4 +320,16 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test the XORVxVy instruction.
+    #[test]
+    fn test_xorvxvy() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/XORVxVy/xorvxvytest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x0E ^ 0x03, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
+
 }
