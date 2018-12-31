@@ -35,11 +35,11 @@ pub enum Opcode {
     XORVxVy(u8, u8),
     /// 0x8xy4: Add Vx and Vy. Store the result in Vx, store any carry in VF.
     ADDVxVy(u8, u8),
-    /// 0x8xy5: Subtract Vy from Vx. Store the result in Vx. If Vx > Vy, set VF to 1, otherwise set it to 0.
+    /// 0x8xy5: Set Vx to Vx - Vy. If Vx > Vy, VF is set to 1 otherwise 0.
     SUBVxVy(u8, u8),
     /// 0x8xy6: Shift Vx right 1 (ignore Vy). Store result in Vx. If 0x01 & Vx is 1 before shift, VF is set to 1, oetherwise 0.
     SHRVx(u8),
-    /// 0x8xy7: Set Vx to Vy - Vx. If Vy > Vx, VF is set to 1 oetherwise 0.
+    /// 0x8xy7: Set Vx to Vy - Vx. If Vy > Vx, VF is set to 1 otherwise 0.
     SUBNVxVy(u8, u8),
     /// 0x8xyE: Shift Vx left 1 (ignore Vy). Store result in Vx. If 0x80 & Vx is 1 before shift, VF is set to 1, oetherwise 0.
     SHLVx(u8),
