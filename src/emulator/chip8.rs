@@ -503,7 +503,8 @@ impl Chip8 {
             *vx = *vx - vy;
             self.registers.vf = 1;
         } else {
-            *vx = ((*vx as i16) - (vy as i16)) as u8;
+            let tmp: i16 = (*vx).wrapping_sub(vy) as i16;  // Wrap around
+            *vx = ((tmp ^ 0xFF) + 1) as u8;                // Get the magnitude, rather than 2's complement version
             self.registers.vf = 0;
         }
 
@@ -546,13 +547,14 @@ impl Chip8 {
             Err(msg) => return Err(msg),
         };
 
-        *vx = *vx - vy;
-
         let lt: bool = *vx < vy;
 
         if lt {
+            *vx = vy - *vx;
             self.registers.vf = 1;
         } else {
+            let tmp: i16 = (vy).wrapping_sub(*vx) as i16;  // Wrap around
+            *vx = ((tmp ^ 0xFF) + 1) as u8;                // Get the magnitude, rather than 2's complement version
             self.registers.vf = 0;
         }
 

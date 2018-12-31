@@ -332,7 +332,7 @@ mod tests {
         exit_and_join(emu, &tx);
     }
 
-    /// Test ADD VxVy with carry bit and without.
+    /// Test ADDVxVy with carry bit and without.
     #[test]
     fn test_addvxvy() {
         let (emu, tx, rx) = emulate(path::Path::new("testprograms/ADDVxVy/addvxvytest.bin"));
@@ -351,6 +351,29 @@ mod tests {
 
         // Check carry in VF
         assert_register(15, 0x01, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test SUBVxVy with borrow/no-borrow.
+    #[test]
+    fn test_subvxvy() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SUBVxVy/subvxvytest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x0B, &tx, &rx);
+
+        // Check no borrow in VF
+        assert_register(15, 0x01, &tx, &rx);
+
+        // Continue to next break point
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send");
+
+        // Check register VB
+        assert_register(11, 0xDD, &tx, &rx);
+
+        // Check borrow in VF
+        assert_register(15, 0x00, &tx, &rx);
 
         exit_and_join(emu, &tx);
     }
