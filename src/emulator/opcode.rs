@@ -70,7 +70,7 @@ pub enum Opcode {
     /// 0xFx29: Set I equal to the location of sprite for digit Vx.
     /// The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx.
     LDFVx(u8),
-    /// 0xF33: Store the binary-coded-decimal representation of Vx in memory locations I, I+1, and I+2.
+    /// 0xFx33: Store the binary-coded-decimal representation of Vx in memory locations I, I+1, and I+2.
     /// The hundreds digit is I, tens at I+1, then ones at I+2.
     LDBVx(u8),
     /// 0xFx55: Store registers V0 through Vx in memory starting at location I.

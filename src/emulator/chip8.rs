@@ -469,7 +469,7 @@ impl Chip8 {
             Err(msg) => return Err(msg),
         };
 
-        let tmp: u16 = (*vx + vy) as u16;
+        let tmp: u16 = (*vx as u16) + (vy as u16);
 
         *vx = tmp as u8;
 
@@ -497,13 +497,13 @@ impl Chip8 {
             Err(msg) => return Err(msg),
         };
 
-        *vx = *vx - vy;
-
         let gt: bool = *vx > vy;
 
         if gt {
+            *vx = *vx - vy;
             self.registers.vf = 1;
         } else {
+            *vx = ((*vx as i16) - (vy as i16)) as u8;
             self.registers.vf = 0;
         }
 
