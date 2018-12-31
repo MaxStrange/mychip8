@@ -95,7 +95,7 @@ mod tests {
 
     /// Handles getting the response from the RX pipe, dealing with timeouts and errors as appropriate.
     fn get_response(rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
-        match rx.recv_timeout(time::Duration::new(6, 0)) {
+        match rx.recv_timeout(time::Duration::new(8, 0)) {
             Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
             Ok(response) => response,
         }
@@ -374,6 +374,29 @@ mod tests {
 
         // Check borrow in VF
         assert_register(15, 0x00, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test SHRVx with LSB/no LSB
+    #[test]
+    fn test_shrvx() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SHRVx/shrvxtest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x07, &tx, &rx);
+
+        // Check VF
+        assert_register(15, 0x00, &tx, &rx);
+
+        // Continue to next break point
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send");
+
+        // Check register VB
+        assert_register(11, 0x7E, &tx, &rx);
+
+        // Check VF
+        assert_register(15, 0x01, &tx, &rx);
 
         exit_and_join(emu, &tx);
     }
