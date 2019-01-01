@@ -446,4 +446,22 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test that the SNEVxVy instruction works by loading a value into two different registers and comparing them
+    /// and then checking if we break at the right place.
+    #[test]
+    fn test_snevxvy() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SNEVxVy/snevxvytest.bin"));
+
+        // Check that the PC is at the correct location
+        assert_pc(0x020C, &tx, &rx);
+
+        // Check that register V3 has the expected value
+        assert_register(3, 0x25, &tx, &rx);
+
+        // Check that register V4 has the expected value
+        assert_register(4, 0x26, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }
