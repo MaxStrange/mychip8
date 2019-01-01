@@ -423,4 +423,27 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test SHLVx with LSB/no LSB
+    #[test]
+    fn test_shlvx() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SHLVx/shlvxtest.bin"));
+
+        // Check register VA
+        assert_register(10, 0x1C, &tx, &rx);
+
+        // Check VF
+        assert_register(15, 0x00, &tx, &rx);
+
+        // Continue to next break point
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send");
+
+        // Check register VB
+        assert_register(11, 0xFA, &tx, &rx);
+
+        // Check VF
+        assert_register(15, 0x01, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }

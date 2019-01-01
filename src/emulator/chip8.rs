@@ -571,7 +571,7 @@ impl Chip8 {
             Err(msg) => return Err(msg),
         };
 
-        let msb_is_one: bool = (*vx | 0x80) > 0;
+        let msb_is_one: bool = (*vx & 0x80) == 0x80;
         *vx = *vx << 1;
         if msb_is_one {
             self.registers.vf = 1;
