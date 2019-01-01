@@ -24,6 +24,8 @@ pub enum EmulatorCommand {
     Exit,
     /// Peek from address to address + nbytes.
     PeekAddr(Address, usize),
+    /// Peek at register I.
+    PeekI,
     /// Peek at the PC
     PeekPC,
     /// Peek at the given register
@@ -39,6 +41,8 @@ pub enum EmulatorCommand {
 /// The possible responses from the emulator in response to EmulatorCommands
 #[derive(Debug)]
 pub enum EmulatorResponse {
+    /// Returns the contents of register I (index register).
+    I(u16),
     /// Returns a bunch of bytes.
     MemorySlice(Vec<u8>),
     /// Returns the current program counter.
@@ -184,6 +188,11 @@ impl Chip8 {
 
             // Check the received command
             match cmd {
+                // Get the I register and return it
+                EmulatorCommand::PeekI => {
+                    self.debugtx.send(EmulatorResponse::I(self.index)).unwrap();
+                },
+
                 // Get the PC and return it
                 EmulatorCommand::PeekPC => {
                     self.debugtx.send(EmulatorResponse::PC(self.pc)).unwrap();
@@ -606,16 +615,10 @@ impl Chip8 {
 
     /// Executes a LD instruction on register I and `addr`.
     ///
-    /// The value of regsiter I is set to the value at RAM address `addr`.
+    /// The value of regsiter I is set to the value `addr`.
     fn execute_ldiaddr(&mut self, addr: Address) -> EmuResult {
-        if addr as usize >= MEMORY_LENGTH_NBYTES {
-            let mut msg = String::new();
-            write!(msg, "Address {} is out of range of the RAM.", addr).unwrap();
-            Err(msg)
-        } else {
-            self.index = self.memory[addr as usize] as u16;
-            Ok(2)
-        }
+        self.index = addr;
+        Ok(2)
     }
 
     /// Executes a JP instruction on V0 and `addr`.

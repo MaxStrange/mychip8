@@ -145,6 +145,14 @@ mod tests {
         }
     }
 
+    /// Asserts that the contents of register I are equal to the given `regval`.
+    fn assert_iregister(regval: u16, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekI, tx, rx) {
+            EmulatorResponse::I(received_regval) => assert_eq!(received_regval, regval),
+            response => panic!("Response {:?} makes no sense...", response),
+        }
+    }
+
     /// SYS is a NOP, so really just test that nothing breaks.
     #[test]
     fn test_sys() {
@@ -461,6 +469,17 @@ mod tests {
 
         // Check that register V4 has the expected value
         assert_register(4, 0x26, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test LDIAddr by loading a byte into I and checking it.
+    #[test]
+    fn test_ldiaddr() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/LDIAddr/ldiaddrtest.bin"));
+
+        // Check that register I has the right value.
+        assert_iregister(0x021E, &tx, &rx);
 
         exit_and_join(emu, &tx);
     }
