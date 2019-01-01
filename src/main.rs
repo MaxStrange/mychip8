@@ -494,4 +494,35 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test RNDVxByte instruction by getting ten random numbers and making sure they aren't all the same.
+    #[test]
+    fn test_rndvxbyte() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/RNDVxByte/rndvxbytetest.bin"));
+
+        /* Collect ten random bytes */
+        let mut randombytes = Vec::<u8>::new();
+        for i in 0..10 {
+            match send_and_receive(EmulatorCommand::PeekReg(i), &tx, &rx) {
+                EmulatorResponse::Reg(b) => randombytes.push(b),
+                response => panic!("Response {:?} makes no sense...", response),
+            }
+        }
+
+        assert!(randombytes.len() > 0);
+
+        /* Make sure they aren't all the same - the odds of them being all the same is very very low if working properly */
+        let val = randombytes[0];
+        let mut all_the_same = true;
+        for other in randombytes {
+            if other != val {
+                all_the_same = false;
+                break;
+            }
+        }
+
+        assert_eq!(all_the_same, false);
+
+        exit_and_join(emu, &tx);
+    }
 }
