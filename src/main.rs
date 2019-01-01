@@ -525,4 +525,19 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test DRWVxVyNibble instruction.
+    #[test]
+    fn test_drwvxvynibble() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/DRWVxVyNibble/drwvxvynibbletest.bin"));
+
+        // Let program draw some sprites, then check VF for collision
+        assert_register(15, 0, &tx, &rx);
+
+        // Do it again
+        send_and_receive(EmulatorCommand::ResumeExecution, &tx, &rx);
+        assert_register(15, 1, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }
