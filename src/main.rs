@@ -483,4 +483,15 @@ mod tests {
 
         exit_and_join(emu, &tx);
     }
+
+    /// Test JPV0Addr instruction by loading a value into v0, jumping, and seeing if the PC is in the right place.
+    #[test]
+    fn test_jpv0addr() {
+        let (emu, tx, rx) = emulate(path::Path::new("testprograms/JPV0Addr/jpv0addrtest.bin"));
+
+        // Check that the PC is at the right place.
+        assert_pc(0x020C, &tx, &rx);
+
+        exit_and_join(emu, &tx);
+    }
 }

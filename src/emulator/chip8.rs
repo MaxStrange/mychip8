@@ -634,7 +634,7 @@ impl Chip8 {
             Err(msg)
         } else {
             self.pc = addr + self.registers.v0 as u16;
-            Ok(2)
+            Ok(0)
         }
     }
 
