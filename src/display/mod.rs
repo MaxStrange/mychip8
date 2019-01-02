@@ -6,6 +6,8 @@ extern crate rusttype;
 
 /* Public interfaces */
 pub mod gui;
+pub mod sprite;
 
 /* Internal mods */
 mod panel;
+mod pixelgrid;

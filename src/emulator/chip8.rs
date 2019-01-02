@@ -1,5 +1,5 @@
 use super::opcode::Opcode;
-use super::display::gui;
+use super::display::{gui, sprite};
 use super::rand::prelude::*;
 use super::register::{Register, RegisterArray};
 use std::fmt::{self, Write};
@@ -664,12 +664,12 @@ impl Chip8 {
     /// If the sprite is positioned so part of it is outside the coordinates of the display, it wraps
     /// around to the opposite side of the screen.
     fn execute_drwvxvynibble(&mut self, x: Register, y: Register, byte: u8) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
-        let _vy = match self.get_register(y) {
+        let vy = match self.get_register(y) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
@@ -690,9 +690,14 @@ impl Chip8 {
             combined_sprite.push(sprite);
         }
 
-        // TODO: Display the combined_sprite on the screen and check for collisions
+        let pixsprite = sprite::Sprite::new(&combined_sprite, vx as u32, vy as u32);
+        let collision = self.user_interface.buffer_sprite(pixsprite.clone());
 
-        Err("Not yet implemented.".to_string())
+        if collision {
+            self.registers.vf = if collision { 0x01 } else { 0x00 };
+        }
+
+        Ok(2)
     }
 
     /// Executes a SKP instruction on register `x`.

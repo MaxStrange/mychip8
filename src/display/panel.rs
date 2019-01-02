@@ -3,6 +3,7 @@
 use super::piston_window as pwindow;
 use self::pwindow::Transformed;
 use super::rusttype;
+use super::sprite;
 
 #[derive(Debug, Clone, Copy)]
 /// X, Y values
@@ -33,6 +34,8 @@ enum ArrowDirection {
 pub enum Chip8Instruction {
     /// Clear the Chip8 panel of anything the user has drawn.
     ClearScreen,
+    /// Draw the given sprite on the panel in the appropriate location and scale.
+    DrawSprite(sprite::Sprite),
 }
 
 /// The different possible argument combinations that we might pass
@@ -78,10 +81,20 @@ impl Panel {
         });
     }
 
+    fn chip8_draw_sprite(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, s: sprite::Sprite) {
+        window.draw_2d(event, |context, graphics| {
+            for pixel in s {
+                // TODO: xored_color, rect
+                pwindow::rectangle(xored_color, rect, context.transform, graphics);
+            }
+        });
+    }
+
     fn draw_chip8(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, instructions: &Vec<Chip8Instruction>) {
         for instr in instructions {
             match instr {
                 Chip8Instruction::ClearScreen => self.chip8_clear_screen(window, event),
+                Chip8Instruction::DrawSprite(s) => self.chip8_draw_sprite(window, event, s),
             }
         }
     }

@@ -1,7 +1,9 @@
 //! The GUI
 
 use super::panel;
+use super::pixelgrid;
 use super::piston_window as pwindow;
+use super::sprite;
 
 /// Width of the whole GUI in pixels
 const WIDTH_NPIXELS: u32 = 640;
@@ -31,6 +33,7 @@ const BORDER_RADIUS: f64 = 3.0;
 pub struct Gui {
     chip8_instruction_buffer: Vec<panel::Chip8Instruction>,
     chip8_panel: panel::Panel,
+    pxgrid: pixelgrid::PixelGrid,
     ram_panel: panel::Panel,
     stack_panel: panel::Panel,
     window: pwindow::PistonWindow,
@@ -41,6 +44,7 @@ impl Gui {
         Gui {
             chip8_instruction_buffer: Vec::<panel::Chip8Instruction>::new(),
             chip8_panel: panel::Panel::new(0, 0, CHIP8_HEIGHT_AFTER_SF, CHIP8_WIDTH_AFTER_SF),
+            pxgrid: pixelgrid::PixelGrid::new(CHIP8_HEIGHT_AFTER_SF, CHIP8_WIDTH_AFTER_SF, CHIP8_SCALE_FACTOR),
             ram_panel: panel::Panel::new(0, CHIP8_HEIGHT_AFTER_SF + BORDER_RADIUS as u32, BOTTOM_PANEL_HEIGHT_NPIXELS, BOTTOM_PANEL_WIDTH_NPIXELS),
             stack_panel: panel::Panel::new(CHIP8_WIDTH_AFTER_SF + BORDER_RADIUS as u32, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
             window: pwindow::WindowSettings::new("CHIP-8", [WIDTH_NPIXELS, HEIGHT_NPIXELS]).exit_on_esc(true).build().unwrap(),
@@ -49,6 +53,15 @@ impl Gui {
 
     pub fn next(&mut self) -> Option<pwindow::Event> {
         self.window.next()
+    }
+
+    /// Buffers a sprite to be drawn at the next chip8 drawing method call.
+    ///
+    /// Returns true if any part of the given sprite overwrites any sprites currently
+    /// in existence.
+    pub fn buffer_sprite(&mut self, s: sprite::Sprite) -> bool {
+        self.chip8_instruction_buffer.push(panel::Chip8Instruction::DrawSprite(s.clone()));
+        self.pxgrid.add_sprite(s)
     }
 
     /// Clears the whole display
