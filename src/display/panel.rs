@@ -1,9 +1,9 @@
 //! Panel that can display stuff
 
 use super::piston_window as pwindow;
+use super::pixelgrid;
 use self::pwindow::Transformed;
 use super::rusttype;
-use super::sprite;
 
 #[derive(Debug, Clone, Copy)]
 /// X, Y values
@@ -31,17 +31,17 @@ enum ArrowDirection {
 }
 
 /// The different instructions that can be executed as part of drawing stuff in the Chip8 panel.
-pub enum Chip8Instruction {
+pub enum Chip8Instruction<'a> {
     /// Clear the Chip8 panel of anything the user has drawn.
     ClearScreen,
-    /// Draw the given sprite on the panel in the appropriate location and scale.
-    DrawSprite(sprite::Sprite),
+    /// Draw the given PixelGrid on to the Chip8 panel.
+    DrawPixGrid(&'a pixelgrid::PixelGrid),
 }
 
 /// The different possible argument combinations that we might pass
 /// to a Panel's draw method.
 pub enum Context<'a> {
-    Chip8{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, instructions: &'a Vec<Chip8Instruction>},
+    Chip8{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, instructions: &'a Vec<Chip8Instruction<'a>>},
     Ram{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, pc: u16, ram: &'a [u8]},
     Stack{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, sp: u8, stack: &'a [u16]},
 }
@@ -81,10 +81,11 @@ impl Panel {
         });
     }
 
-    fn chip8_draw_sprite(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, s: sprite::Sprite) {
+    fn chip8_draw_grid(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, grid: &pixelgrid::PixelGrid) {
         window.draw_2d(event, |context, graphics| {
-            for pixel in s {
-                // TODO: xored_color, rect
+            for pixel in grid.pixels {
+                let xored_color = if pixel.value == pixelgrid::Pxcolor::Black { SPRITE_COLOR } else { BACKGROUND_COLOR };
+                let rect = [pixel.x as f64, pixel.y as f64, (pixel.x + pixel.ncols) as f64, (pixel.y + pixel.nrows) as f64];
                 pwindow::rectangle(xored_color, rect, context.transform, graphics);
             }
         });
@@ -94,7 +95,7 @@ impl Panel {
         for instr in instructions {
             match instr {
                 Chip8Instruction::ClearScreen => self.chip8_clear_screen(window, event),
-                Chip8Instruction::DrawSprite(s) => self.chip8_draw_sprite(window, event, s),
+                Chip8Instruction::DrawPixGrid(grid) => self.chip8_draw_grid(window, event, grid),
             }
         }
     }

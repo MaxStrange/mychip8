@@ -30,8 +30,8 @@ const BOTTOM_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS;
 /// The radius of the boarder
 const BORDER_RADIUS: f64 = 3.0;
 
-pub struct Gui {
-    chip8_instruction_buffer: Vec<panel::Chip8Instruction>,
+pub struct Gui<'a> {
+    chip8_instruction_buffer: Vec<panel::Chip8Instruction<'a>>,
     chip8_panel: panel::Panel,
     pxgrid: pixelgrid::PixelGrid,
     ram_panel: panel::Panel,
@@ -39,7 +39,7 @@ pub struct Gui {
     window: pwindow::PistonWindow,
 }
 
-impl Gui {
+impl<'a> Gui<'a> {
     pub fn new() -> Self {
         Gui {
             chip8_instruction_buffer: Vec::<panel::Chip8Instruction>::new(),
@@ -60,8 +60,9 @@ impl Gui {
     /// Returns true if any part of the given sprite overwrites any sprites currently
     /// in existence.
     pub fn buffer_sprite(&mut self, s: sprite::Sprite) -> bool {
-        self.chip8_instruction_buffer.push(panel::Chip8Instruction::DrawSprite(s.clone()));
-        self.pxgrid.add_sprite(s)
+        let overlap = self.pxgrid.add_sprite(&s);
+        self.chip8_instruction_buffer.push(panel::Chip8Instruction::DrawPixGrid(&self.pxgrid));
+        overlap
     }
 
     /// Clears the whole display

@@ -3,7 +3,7 @@
 use super::sprite;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum Pxcolor {
+pub enum Pxcolor {
     /// Sprite color
     Black,
     /// Background color
@@ -11,22 +11,25 @@ enum Pxcolor {
 }
 
 /// A PixelGrid is simply that: a 2D grid of pixels and associated methods.
+///
+/// We ignore the scale factors for the pixels and simply treat them as if they are truly pixels.
+/// It is the Panel's responsibility for drawing the Pixels correctly based on the scale factors.
 pub struct PixelGrid {
     /// Number of rows of pixels
-    nrows: u32,
+    pub nrows: u32,
     /// Number of columns of pixels
-    ncols: u32,
+    pub ncols: u32,
     /// The Pixels contained in this grid.
-    pixels: Vec<Pixel>,
+    pub pixels: Vec<Pixel>,
 }
 
 /// A Pixel is a virtual pixel - a solid black or solid white block at the appropriate scale factor.
 pub struct Pixel {
     /// The color of this pixel.
-    value: Pxcolor,
+    pub value: Pxcolor,
     /// The scale factor for this pixel - i.e., how big it appears on screen.
     /// A scalefactor of 4.0 would mean that every virtual pixel is actually 4x4 real pixels.
-    scalefactor: f64,
+    pub scalefactor: f64,
 }
 
 impl Pixel {
@@ -85,7 +88,7 @@ impl PixelGrid {
         let end = s.y + s.rows.len() as u32;
 
         // Iterate from the top of the sprite downwards over however many rows the sprite contains
-        for (byte, y) in s.zip(start..end) {
+        for (byte, y) in s.rows.zip(start..end) {
 
             // Each row in the sprite is a byte.
             // Iterate over that byte from left to right.
