@@ -152,7 +152,7 @@ impl Chip8 {
             }
 
             // Draw everything
-            self.user_interface.clear(&pistonevent);
+            self.user_interface.clear_panels(&pistonevent, vec![gui::PanelType::Ram, gui::PanelType::Stack]);
             self.user_interface.draw_chip8(&pistonevent);
             self.user_interface.draw_ram(&pistonevent, self.pc, &self.memory);
             self.user_interface.draw_stack(&pistonevent, self.sp, &self.stack);

@@ -10,12 +10,12 @@ const SPRITE_COLOR: &str = "001a00";
 /// The color of the Chip8 background (pixels that are off)
 const BACKGROUND_COLOR: &str = "e6ffcc";
 
-#[derive(Debug, Clone, Copy)]
 /// X, Y values
+#[derive(Debug, Clone, Copy)]
 struct Point(u32, u32);
 
-#[derive(Debug, Clone)]
 /// Top-left and bottom-right points
+#[derive(Debug, Clone)]
 struct Rectangle(Point, Point);
 
 impl Rectangle {
@@ -28,19 +28,20 @@ impl Rectangle {
     }
 }
 
-#[allow(dead_code)]
 /// Which direction an arrow is pointing
+#[allow(dead_code)]
 enum ArrowDirection {
     Left,
     Right,
 }
 
 /// The different instructions that can be executed as part of drawing stuff in the Chip8 panel.
+#[derive(Debug)]
 pub enum Chip8Instruction {
     /// Clear the Chip8 panel of anything the user has drawn.
     ClearScreen,
-    /// Draw the given PixelGrid on to the Chip8 panel.
-    DrawPixGrid(pixelgrid::PixelGrid),
+    /// Draw the given pixels to the Chip8 panel.
+    DrawPixGrid(Vec<pixelgrid::Pixel>),
 }
 
 /// The different possible argument combinations that we might pass
@@ -60,6 +61,8 @@ pub struct Panel {
     width_npixels: u32,
     /// Top left of the Panel
     origin: Point,
+    /// Whether or not we have never been drawn on.
+    never_drawn_on: bool,
 }
 
 impl Panel {
@@ -68,7 +71,20 @@ impl Panel {
             height_npixels: height,
             width_npixels: width,
             origin: Point(originx, originy),
+            never_drawn_on: true,
         }
+    }
+
+    pub fn clear_chip8(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
+        self.chip8_clear_screen(window, event)
+    }
+
+    pub fn clear_ram(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
+        self.clear(window, event)
+    }
+
+    pub fn clear_stack(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
+        self.clear(window, event)
     }
 
     pub fn draw(&mut self, context: Context) {
@@ -82,16 +98,24 @@ impl Panel {
     fn chip8_clear_screen(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
         let rect = [self.origin.0 as f64, self.origin.1 as f64, (self.origin.0 + self.width_npixels) as f64, (self.origin.1 + self.height_npixels) as f64];
         window.draw_2d(event, |context, graphics| {
-            pwindow::rectangle(pwindow::color::WHITE, rect, context.transform, graphics);
+            pwindow::rectangle(pwindow::color::hex(BACKGROUND_COLOR), rect, context.transform, graphics);
         });
+        self.never_drawn_on = false;
     }
 
-    fn chip8_draw_grid(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, grid: &pixelgrid::PixelGrid) {
+    /// Draws the given grid of pixels. This is pretty slow, so only pass in which pixels have changed on the screen.
+    fn chip8_draw_grid(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, grid: &Vec<pixelgrid::Pixel>) {
         let spritecolor = pwindow::color::hex(SPRITE_COLOR);
         let backgroundcolor = pwindow::color::hex(BACKGROUND_COLOR);
 
+        // First set up the background in case this is the first call
+        if self.never_drawn_on {
+            self.chip8_clear_screen(window, event);
+            self.never_drawn_on = false;
+        }
+
         window.draw_2d(event, |context, graphics| {
-            for pixel in grid.pixels.iter() {
+            for pixel in grid {
                 let xored_color = if pixel.value == pixelgrid::Pxcolor::Black { spritecolor } else { backgroundcolor };
                 let rect = [pixel.x as f64, pixel.y as f64, (pixel.x + pixel.ncols) as f64, (pixel.y + pixel.nrows) as f64];
                 pwindow::rectangle(xored_color, rect, context.transform, graphics);
@@ -106,6 +130,13 @@ impl Panel {
                 Chip8Instruction::DrawPixGrid(grid) => self.chip8_draw_grid(window, event, grid),
             }
         }
+    }
+
+    fn clear(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
+        let rect = [self.origin.0 as f64, self.origin.1 as f64, (self.origin.0 + self.width_npixels) as f64, (self.origin.1 + self.height_npixels) as f64];
+        window.draw_2d(event, |context, graphics| {
+            pwindow::rectangle(pwindow::color::WHITE, rect, context.transform, graphics);
+        });
     }
 
     fn draw_ram(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, pc: u16, ram: &[u8]) {

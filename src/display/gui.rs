@@ -30,6 +30,12 @@ const BOTTOM_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS;
 /// The radius of the boarder
 const BORDER_RADIUS: f64 = 3.0;
 
+pub enum PanelType {
+    Chip8,
+    Ram,
+    Stack,
+}
+
 pub struct Gui {
     chip8_instruction_buffer: Vec<panel::Chip8Instruction>,
     chip8_panel: panel::Panel,
@@ -61,16 +67,27 @@ impl Gui {
     /// in existence.
     pub fn buffer_sprite(&mut self, s: sprite::Sprite) -> bool {
         let overlap = self.pxgrid.add_sprite(&s);
-        // TODO: This is super inneficient
-        self.chip8_instruction_buffer.push(panel::Chip8Instruction::DrawPixGrid(self.pxgrid.clone()));
+        self.chip8_instruction_buffer.push(panel::Chip8Instruction::DrawPixGrid(self.pxgrid.xors.clone()));
         overlap
     }
 
     /// Clears the whole display
+    #[allow(dead_code)]
     pub fn clear(&mut self, event: &pwindow::Event) {
         self.window.draw_2d(event, |_context, graphics| {
             pwindow::clear([1.0; 4], graphics);
         });
+    }
+
+    /// Clears the given panels
+    pub fn clear_panels(&mut self, event: &pwindow::Event, panels: Vec<PanelType>) {
+        for p in panels {
+            match p {
+                PanelType::Chip8 => self.chip8_panel.clear_chip8(&mut self.window, event),
+                PanelType::Ram => self.ram_panel.clear_ram(&mut self.window, event),
+                PanelType::Stack => self.stack_panel.clear_stack(&mut self.window, event),
+            }
+        }
     }
 
     /// Adds a clear-chip8 instruction to the instruction buffer.

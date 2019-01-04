@@ -22,6 +22,8 @@ pub struct PixelGrid {
     pub ncols: u32,
     /// The Pixels contained in this grid.
     pub pixels: Vec<Pixel>,
+    /// These are the Pixels that have been added as part of an add_sprite method call.
+    pub xors: Vec<Pixel>,
 }
 
 /// A Pixel is a virtual pixel - a solid black or solid white block at the appropriate scale factor.
@@ -93,15 +95,18 @@ impl PixelGrid {
             nrows: nrows,
             ncols: ncols,
             pixels: pixels,
+            xors: Vec::<Pixel>::new(),
         }
     }
 
     /// Adds the given sprite to the grid of pixels. If any part of this sprite overwrites any
-    /// part of any other sprite, true is returned.
+    /// part of any other sprite, true is returned. Clears the XORs and adds any new sprite pixels
+    /// to them.
     pub fn add_sprite(&mut self, s: &sprite::Sprite) -> bool {
         let mut collision = false;
         let start = s.y;
         let end = s.y + s.rows.len() as u32;
+        self.xors.clear();
 
         // Iterate from the top of the sprite downwards over however many rows the sprite contains
         for (byte, y) in s.rows.iter().zip(start..end) {
@@ -133,12 +138,14 @@ impl PixelGrid {
     }
 
     /// Get the pixel at the given x and y
-    fn get_pixel_at(&self, x: usize, y: usize) -> Pixel {
-        self.pixels[(y * self.ncols as usize) + x].clone()
+    fn get_pixel_at<'a>(&'a self, x: usize, y: usize) -> &'a Pixel {
+        &self.pixels[(y * self.ncols as usize) + x]
     }
 
-    /// Set the value of the given pixel
+    /// Set the value of the given pixel and add it to the xors.
     fn set_pixel_at(&mut self, val: Pxcolor, x: usize, y: usize) {
-        self.pixels[(y * self.ncols as usize) + x].value = val;
+        let idx = (y * self.ncols as usize) + x;
+        self.pixels[idx].value = val;
+        self.xors.push(self.pixels[idx].clone());
     }
 }
