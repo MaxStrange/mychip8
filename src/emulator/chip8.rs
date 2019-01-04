@@ -956,7 +956,7 @@ impl Chip8 {
     }
 
     /// Returns a mutable reference to the specified register if it exists.
-    fn get_register<'a>(&'a mut self, v: Register) -> Result<&'a mut Register, String> {
+    fn get_register<'b>(&'b mut self, v: Register) -> Result<&'b mut Register, String> {
         match v {
             0 => Ok(&mut self.registers.v0),
             1 => Ok(&mut self.registers.v1),

@@ -5,6 +5,11 @@ use super::pixelgrid;
 use self::pwindow::Transformed;
 use super::rusttype;
 
+/// The color of sprites (pixels that are on)
+const SPRITE_COLOR: &str = "001a00";
+/// The color of the Chip8 background (pixels that are off)
+const BACKGROUND_COLOR: &str = "e6ffcc";
+
 #[derive(Debug, Clone, Copy)]
 /// X, Y values
 struct Point(u32, u32);
@@ -31,17 +36,17 @@ enum ArrowDirection {
 }
 
 /// The different instructions that can be executed as part of drawing stuff in the Chip8 panel.
-pub enum Chip8Instruction<'a> {
+pub enum Chip8Instruction {
     /// Clear the Chip8 panel of anything the user has drawn.
     ClearScreen,
     /// Draw the given PixelGrid on to the Chip8 panel.
-    DrawPixGrid(&'a pixelgrid::PixelGrid),
+    DrawPixGrid(pixelgrid::PixelGrid),
 }
 
 /// The different possible argument combinations that we might pass
 /// to a Panel's draw method.
 pub enum Context<'a> {
-    Chip8{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, instructions: &'a Vec<Chip8Instruction<'a>>},
+    Chip8{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, instructions: &'a Vec<Chip8Instruction>},
     Ram{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, pc: u16, ram: &'a [u8]},
     Stack{window: &'a mut pwindow::PistonWindow, event: &'a pwindow::Event, sp: u8, stack: &'a [u16]},
 }
@@ -82,9 +87,12 @@ impl Panel {
     }
 
     fn chip8_draw_grid(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, grid: &pixelgrid::PixelGrid) {
+        let spritecolor = pwindow::color::hex(SPRITE_COLOR);
+        let backgroundcolor = pwindow::color::hex(BACKGROUND_COLOR);
+
         window.draw_2d(event, |context, graphics| {
-            for pixel in grid.pixels {
-                let xored_color = if pixel.value == pixelgrid::Pxcolor::Black { SPRITE_COLOR } else { BACKGROUND_COLOR };
+            for pixel in grid.pixels.iter() {
+                let xored_color = if pixel.value == pixelgrid::Pxcolor::Black { spritecolor } else { backgroundcolor };
                 let rect = [pixel.x as f64, pixel.y as f64, (pixel.x + pixel.ncols) as f64, (pixel.y + pixel.nrows) as f64];
                 pwindow::rectangle(xored_color, rect, context.transform, graphics);
             }

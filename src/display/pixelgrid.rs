@@ -14,6 +14,7 @@ pub enum Pxcolor {
 ///
 /// We ignore the scale factors for the pixels and simply treat them as if they are truly pixels.
 /// It is the Panel's responsibility for drawing the Pixels correctly based on the scale factors.
+#[derive(Debug, Clone)]
 pub struct PixelGrid {
     /// Number of rows of pixels
     pub nrows: u32,
@@ -24,17 +25,30 @@ pub struct PixelGrid {
 }
 
 /// A Pixel is a virtual pixel - a solid black or solid white block at the appropriate scale factor.
+#[derive(Debug, Clone)]
 pub struct Pixel {
+    /// The x-location of this pixel in the scaled pixel screen
+    pub x: u32,
+    /// The y-location of this pixel in the scaled pixel screen
+    pub y: u32,
+    /// The number of rows that this pixel occupies
+    pub nrows: u32,
+    /// The number of columns that this pixel occupies
+    pub ncols: u32,
     /// The color of this pixel.
     pub value: Pxcolor,
     /// The scale factor for this pixel - i.e., how big it appears on screen.
     /// A scalefactor of 4.0 would mean that every virtual pixel is actually 4x4 real pixels.
-    pub scalefactor: f64,
+    scalefactor: f64,
 }
 
 impl Pixel {
-    pub fn new(sf: f64) -> Self {
+    pub fn new(prescaled_x: u32, prescaled_y: u32, sf: f64) -> Self {
         Pixel {
+            x: (prescaled_x as f64 * sf) as u32,
+            y: (prescaled_y as f64 * sf) as u32,
+            nrows: sf as u32,
+            ncols: sf as u32,
             value: Pxcolor::White,
             scalefactor: sf,
         }
@@ -68,8 +82,10 @@ impl PixelGrid {
     pub fn new(nrows: u32, ncols: u32, scalefactor: f64) -> Self {
         // Create the grid from a bunch of pixels
         let mut pixels = Vec::<Pixel>::new();
-        for _ in 0..(nrows * ncols) {
-            pixels.push(Pixel::new(scalefactor));
+        for r in 0..nrows {
+            for c in 0..ncols {
+                pixels.push(Pixel::new(c, r, scalefactor));
+            }
         }
 
         // Construct and return it
@@ -88,7 +104,7 @@ impl PixelGrid {
         let end = s.y + s.rows.len() as u32;
 
         // Iterate from the top of the sprite downwards over however many rows the sprite contains
-        for (byte, y) in s.rows.zip(start..end) {
+        for (byte, y) in s.rows.iter().zip(start..end) {
 
             // Each row in the sprite is a byte.
             // Iterate over that byte from left to right.
@@ -118,7 +134,7 @@ impl PixelGrid {
 
     /// Get the pixel at the given x and y
     fn get_pixel_at(&self, x: usize, y: usize) -> Pixel {
-        self.pixels[(y * self.ncols as usize) + x]
+        self.pixels[(y * self.ncols as usize) + x].clone()
     }
 
     /// Set the value of the given pixel
