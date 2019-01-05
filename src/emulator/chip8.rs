@@ -19,6 +19,11 @@ const STACK_SIZE_N_ADDRS: usize = 16;
 /// In this module, most functions return an EmuResult, which returns either an error message or the number the PC should be incremented by.
 type EmuResult = Result<usize, String>;
 
+enum GuiInstruction {
+    ClearChip8,
+    DrawSprite(sprite::Sprite),
+}
+
 /// The Chip 8 emulator
 pub struct Chip8 {
     /// Flag used in debugging to deterimine if the thread should exit
@@ -35,6 +40,8 @@ pub struct Chip8 {
     memory: [u8; MEMORY_LENGTH_NBYTES],
     /// Program counter
     pc: u16,
+    /// A possible pending GUI operation to take at the next drawing
+    pending_gui_instruction: Option<GuiInstruction>,
     /// The Chip-8 has 15 1-byte general purpose registers and one that is used as a carry flag.
     registers:  RegisterArray,
    /// Stack pointer - simply an index into the stack, which is up to 16 addresses
@@ -77,6 +84,7 @@ impl Chip8 {
             memory: [0u8; MEMORY_LENGTH_NBYTES],
             registers: RegisterArray::new(),
             pc: PROGRAM_START_BYTE_ADDR,
+            pending_gui_instruction: None,
             index: 0,
             sp: 0,
             stack: [0u16; 16],
@@ -112,8 +120,15 @@ impl Chip8 {
                 break;
             }
 
+            // Possibly do some GUI work
+            match self.pending_gui_instruction {
+                Some(i) => match i {
+                    GuiInstruction::ClearChip8 => self.user_interface.clear_chip8(&pistonevent),
+                    GuiInstruction::DrawSprite(sprt) => self.user_interface.draw_sprite(sprt),
+                }
+            }
+
             // Draw everything
-            self.user_interface.clear_panels(&pistonevent, vec![gui::PanelType::Ram, gui::PanelType::Stack]);
             self.user_interface.draw_chip8(&pistonevent);
             self.user_interface.draw_ram(&pistonevent, self.pc, &self.memory);
             self.user_interface.draw_stack(&pistonevent, self.sp, &self.stack);

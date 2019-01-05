@@ -11,7 +11,6 @@ pub mod sprite;
 /* Internal mods */
 mod chip8panel;
 mod panel;
-mod pixelgrid;
 mod rampanel;
 mod stackpanel;
 

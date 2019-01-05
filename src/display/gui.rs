@@ -1,9 +1,12 @@
 //! The GUI
 
-use super::panel;
-use super::pixelgrid;
+use super::panel::Panel;
+use super::chip8panel::Chip8Panel;
+use super::rampanel::RamPanel;
+use super::stackpanel::StackPanel;
 use super::piston_window as pwindow;
 use super::sprite;
+use super::{Point32, DrawingContext};
 
 /// Width of the whole GUI in pixels
 const WIDTH_NPIXELS: u32 = 640;
@@ -38,22 +41,18 @@ pub enum PanelType {
 
 /// The whole GUI for the Chip8, including several Panels.
 pub struct Gui {
-    chip8_instruction_buffer: Vec<panel::Chip8Instruction>,
-    chip8_panel: panel::Panel,
-    pxgrid: pixelgrid::PixelGrid,
-    ram_panel: panel::Panel,
-    stack_panel: panel::Panel,
+    chip8_panel: Chip8Panel,
+    ram_panel: RamPanel,
+    stack_panel: StackPanel,
     window: pwindow::PistonWindow,
 }
 
 impl Gui {
     pub fn new() -> Self {
         Gui {
-            chip8_instruction_buffer: Vec::<panel::Chip8Instruction>::new(),
-            chip8_panel: panel::Panel::new(0, 0, CHIP8_HEIGHT_AFTER_SF, CHIP8_WIDTH_AFTER_SF),
-            pxgrid: pixelgrid::PixelGrid::new(CHIP8_HEIGHT_AFTER_SF, CHIP8_WIDTH_AFTER_SF, CHIP8_SCALE_FACTOR),
-            ram_panel: panel::Panel::new(0, CHIP8_HEIGHT_AFTER_SF + BORDER_RADIUS as u32, BOTTOM_PANEL_HEIGHT_NPIXELS, BOTTOM_PANEL_WIDTH_NPIXELS),
-            stack_panel: panel::Panel::new(CHIP8_WIDTH_AFTER_SF + BORDER_RADIUS as u32, 0, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
+            chip8_panel: Chip8Panel::new(Point32{x: 0, y: 0}, CHIP8_HEIGHT_AFTER_SF, CHIP8_WIDTH_AFTER_SF),
+            ram_panel: RamPanel::new(Point32{x: 0, y: CHIP8_HEIGHT_AFTER_SF + BORDER_RADIUS as u32}, BOTTOM_PANEL_HEIGHT_NPIXELS, BOTTOM_PANEL_WIDTH_NPIXELS),
+            stack_panel: StackPanel::new(Point32{x: CHIP8_WIDTH_AFTER_SF + BORDER_RADIUS as u32, y: 0}, RIGHT_PANEL_HEIGHT_NPIXELS, RIGHT_PANEL_WIDTH_NPIXELS),
             window: pwindow::WindowSettings::new("CHIP-8", [WIDTH_NPIXELS, HEIGHT_NPIXELS]).exit_on_esc(true).build().unwrap(),
         }
     }
@@ -62,40 +61,16 @@ impl Gui {
         self.window.next()
     }
 
-    /// Buffers a sprite to be drawn at the next chip8 drawing method call.
-    ///
-    /// Returns true if any part of the given sprite overwrites any sprites currently
-    /// in existence.
-    pub fn buffer_sprite(&mut self, s: sprite::Sprite) -> bool {
-        let overlap = self.pxgrid.add_sprite(&s);
-        self.chip8_instruction_buffer.push(panel::Chip8Instruction::DrawPixGrid(self.pxgrid.xors.clone()));
-        overlap
+    pub fn clear_chip8(&mut self, event: &pwindow::Event) {
+        // TODO
     }
 
-    /// Clears the whole display
-    #[allow(dead_code)]
-    pub fn clear(&mut self, event: &pwindow::Event) {
-        self.window.draw_2d(event, |_context, graphics| {
-            pwindow::clear([1.0; 4], graphics);
-        });
+    pub fn clear_ram(&mut self, event: &pwindow::Event) {
+        // TODO
     }
 
-    /// Clears the given panels
-    pub fn clear_panels(&mut self, event: &pwindow::Event, panels: Vec<PanelType>) {
-        for p in panels {
-            match p {
-                PanelType::Chip8 => self.chip8_panel.clear_chip8(&mut self.window, event),
-                PanelType::Ram => self.ram_panel.clear_ram(&mut self.window, event),
-                PanelType::Stack => self.stack_panel.clear_stack(&mut self.window, event),
-            }
-        }
-    }
-
-    /// Adds a clear-chip8 instruction to the instruction buffer.
-    ///
-    /// The next time draw_chip8() is called, the screen will be cleared.
-    pub fn clear_chip8(&mut self) {
-        self.chip8_instruction_buffer.push(panel::Chip8Instruction::ClearScreen);
+    pub fn clear_stack(&mut self, event: &pwindow::Event) {
+        // TODO
     }
 
     /// Draws the borders between the panels
@@ -125,18 +100,18 @@ impl Gui {
     /// function should get called once per emulation cycle, or perhaps only whenever
     /// anything has changed in the display.
     pub fn draw_chip8(&mut self, event: &pwindow::Event) {
-        self.chip8_panel.draw(panel::Context::Chip8{window: &mut self.window, event: event, instructions: &self.chip8_instruction_buffer});
+        // TODO
     }
 
     /// Draw the RAM around where the program counter is currently.
     ///
     /// Includes disassembly of instructions... if I ever get around to that.
     pub fn draw_ram(&mut self, event: &pwindow::Event, pc: u16, ram: &[u8]) {
-        self.ram_panel.draw(panel::Context::Ram{window: &mut self.window, event: event, pc: pc, ram: ram});
+        // TODO
     }
 
     /// Draw the stack, including an indication of where the stack pointer is.
     pub fn draw_stack(&mut self, event: &pwindow::Event, sp: u8, stack: &[u16]) {
-        self.stack_panel.draw(panel::Context::Stack{window: &mut self.window, event: event, sp: sp, stack: stack});
+        // TODO
     }
 }

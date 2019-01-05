@@ -28,7 +28,7 @@ pub trait Panel {
     }
 
     /// Get our state. Mostly useful for the accessing our internal state in default trait method implementations.
-    fn get_state(&mut self) -> PanelData;
+    fn get_state(&self) -> PanelData;
 
     /// Take whatever you need from the provided DrawingContext and draw on this Panel.
     fn draw(&mut self, args: DrawingContext);
@@ -93,11 +93,11 @@ pub trait Panel {
 /// A Panel is a rectangular portion of the GUI window. This is the data that is required by one.
 pub struct PanelData {
     /// Height of the Panel in pixels
-    height_npixels: u32,
+    pub height_npixels: u32,
     /// Width of the Panel in pixels
-    width_npixels: u32,
+    pub width_npixels: u32,
     /// Top left of the Panel
-    origin: Point32,
+    pub origin: Point32,
 }
 
 impl PanelData {
