@@ -30,22 +30,6 @@ const BOTTOM_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS;
 /// The radius of the boarder
 const BORDER_RADIUS: f64 = 3.0;
 
-/// A bunch of arguments that the GUI may need to draw at any given time.
-pub struct DrawingContext<'a> {
-    /// Piston Event for this drawing.
-    event: &'a pwindow::Event,
-    /// The current program counter.
-    pc: u16,
-    /// The RAM to draw.
-    ram: &'a [u8],
-    /// The stack pointer.
-    sp: u8,
-    /// The stack to draw.
-    stack: &'a [u16],
-    /// The Piston Window to draw in.
-    window: &'a mut pwindow::PistonWindow,
-}
-
 pub enum PanelType {
     Chip8,
     Ram,
