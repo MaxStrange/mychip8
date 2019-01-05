@@ -19,11 +19,6 @@ const STACK_SIZE_N_ADDRS: usize = 16;
 /// In this module, most functions return an EmuResult, which returns either an error message or the number the PC should be incremented by.
 type EmuResult = Result<usize, String>;
 
-enum GuiInstruction {
-    ClearChip8,
-    DrawSprite(sprite::Sprite),
-}
-
 /// The Chip 8 emulator
 pub struct Chip8 {
     /// Flag used in debugging to deterimine if the thread should exit
@@ -40,11 +35,11 @@ pub struct Chip8 {
     memory: [u8; MEMORY_LENGTH_NBYTES],
     /// Program counter
     pc: u16,
-    /// A possible pending GUI operation to take at the next drawing
-    pending_gui_instruction: Option<GuiInstruction>,
     /// The Chip-8 has 15 1-byte general purpose registers and one that is used as a carry flag.
     registers:  RegisterArray,
-   /// Stack pointer - simply an index into the stack, which is up to 16 addresses
+    /// Should we clear the display?
+    should_clear_chip8_display: bool,
+    /// Stack pointer - simply an index into the stack, which is up to 16 addresses
     sp: u8,
     /// The stack is implemented as its own array of 16 16-bit values, rather than just a section of RAM
     stack: [u16; STACK_SIZE_N_ADDRS],
@@ -84,8 +79,8 @@ impl Chip8 {
             memory: [0u8; MEMORY_LENGTH_NBYTES],
             registers: RegisterArray::new(),
             pc: PROGRAM_START_BYTE_ADDR,
-            pending_gui_instruction: None,
             index: 0,
+            should_clear_chip8_display: true,
             sp: 0,
             stack: [0u16; 16],
             user_interface: gui::Gui::new(),
@@ -121,11 +116,8 @@ impl Chip8 {
             }
 
             // Possibly do some GUI work
-            match self.pending_gui_instruction {
-                Some(i) => match i {
-                    GuiInstruction::ClearChip8 => self.user_interface.clear_chip8(&pistonevent),
-                    GuiInstruction::DrawSprite(sprt) => self.user_interface.draw_sprite(sprt),
-                }
+            if self.should_clear_chip8_display {
+                self.user_interface.clear_chip8(&pistonevent);
             }
 
             // Draw everything
@@ -226,7 +218,7 @@ impl Chip8 {
     ///
     /// Clears the display.
     fn execute_cls(&mut self) -> EmuResult {
-        self.user_interface.clear_chip8();
+        self.should_clear_chip8_display = true;
 
         Ok(2)
     }
@@ -667,7 +659,7 @@ impl Chip8 {
         }
 
         let pixsprite = sprite::Sprite::new(&combined_sprite, vx as u32, vy as u32);
-        let collision = self.user_interface.buffer_sprite(pixsprite.clone());
+        let collision = self.user_interface.draw_sprite(pixsprite.clone());
 
         if collision {
             self.registers.vf = if collision { 0x01 } else { 0x00 };

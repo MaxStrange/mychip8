@@ -93,6 +93,12 @@ impl Gui {
         });
     }
 
+    /// Returns true if any pixel in the given sprite overwrites any pixels of any sprites already in the panel.
+    pub fn draw_sprite(&mut self, spr: sprite::Sprite) -> bool {
+        // TODO
+        false
+    }
+
     /// Draw the video game display
     ///
     /// Draws the pixels in this object's internal representation of the game display.
