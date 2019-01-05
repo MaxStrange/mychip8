@@ -8,7 +8,13 @@ use super::display;
 
 /* Public interface */
 pub mod chip8;
+pub mod debugiface;
 
 /* Internal Mods */
 mod opcode;
 mod register;
+
+/* Some datatypes that are common to this whole module */
+
+/// An address in RAM. RAM's address space can be described by 12 bits.
+type Address = u16;

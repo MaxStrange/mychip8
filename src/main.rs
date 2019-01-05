@@ -7,6 +7,7 @@ mod emulator;
 
 /* Uses */
 use self::emulator::chip8;
+use self::emulator::debugiface as dbg;
 use std::fs;
 use std::io::Read;
 use std::sync::mpsc;
@@ -15,7 +16,7 @@ use std::process;
 use std::thread;
 
 /// Creates an emulator thread and returns it along with the pipe to and from it.
-pub fn emulate(progpath: &path::Path) -> (thread::JoinHandle<()>, mpsc::Sender<chip8::EmulatorCommand>, mpsc::Receiver<chip8::EmulatorResponse>) {
+pub fn emulate(progpath: &path::Path) -> (thread::JoinHandle<()>, mpsc::Sender<dbg::EmulatorCommand>, mpsc::Receiver<dbg::EmulatorResponse>) {
     // Load the contents from the file
     let mut contents = match fs::File::open(progpath) {
         Ok(b) => b,
@@ -35,8 +36,8 @@ pub fn emulate(progpath: &path::Path) -> (thread::JoinHandle<()>, mpsc::Sender<c
     }
 
     // Make some pipes. Use these for debugging and in the test rig.
-    let (mytx, yourrx): (mpsc::Sender<chip8::EmulatorCommand>, mpsc::Receiver<chip8::EmulatorCommand>) = mpsc::channel();
-    let (yourtx, myrx): (mpsc::Sender<chip8::EmulatorResponse>, mpsc::Receiver<chip8::EmulatorResponse>) = mpsc::channel();
+    let (mytx, yourrx): (mpsc::Sender<dbg::EmulatorCommand>, mpsc::Receiver<dbg::EmulatorCommand>) = mpsc::channel();
+    let (yourtx, myrx): (mpsc::Sender<dbg::EmulatorResponse>, mpsc::Receiver<dbg::EmulatorResponse>) = mpsc::channel();
 
     // Spawn an emulator. We can send it commands while it is running. Useful for debugging.
     let emuthread = thread::spawn(move || {
@@ -89,8 +90,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::chip8::EmulatorCommand;
-    use super::chip8::EmulatorResponse;
+    use super::dbg::EmulatorCommand;
+    use super::dbg::EmulatorResponse;
     use std::time;
 
     /// Handles getting the response from the RX pipe, dealing with timeouts and errors as appropriate.

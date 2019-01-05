@@ -1,4 +1,6 @@
+use super::Address;
 use super::opcode::Opcode;
+use super::debugiface::{EmulatorCommand, EmulatorResponse};
 use super::display::{gui, sprite};
 use super::rand::prelude::*;
 use super::register::{Register, RegisterArray};
@@ -16,47 +18,6 @@ const STACK_SIZE_N_ADDRS: usize = 16;
 
 /// In this module, most functions return an EmuResult, which returns either an error message or the number the PC should be incremented by.
 type EmuResult = Result<usize, String>;
-
-/// The different commands the emulator understands. Used for debugging.
-#[derive(Debug)]
-pub enum EmulatorCommand {
-    /// Exit the emulator thread.
-    Exit,
-    /// Peek from address to address + nbytes.
-    PeekAddr(Address, usize),
-    /// Peek at register I.
-    PeekI,
-    /// Peek at the PC
-    PeekPC,
-    /// Peek at the given register
-    PeekReg(u8),
-    /// Peek at the SP
-    PeekSP,
-    /// Peek at the whole stack.
-    PeekStack,
-    /// Resume normal execution of the program.
-    ResumeExecution,
-}
-
-/// The possible responses from the emulator in response to EmulatorCommands
-#[derive(Debug)]
-pub enum EmulatorResponse {
-    /// Returns the contents of register I (index register).
-    I(u16),
-    /// Returns a bunch of bytes.
-    MemorySlice(Vec<u8>),
-    /// Returns the current program counter.
-    PC(u16),
-    /// Returns the contents of a register.
-    Reg(u8),
-    /// Returns the current stack pointer.
-    SP(u8),
-    /// Returns the current stack.
-    Stack(Vec<u16>),
-}
-
-/// An address in RAM. RAM's address space can be described by 12 bits.
-type Address = u16;
 
 /// The Chip 8 emulator
 pub struct Chip8 {
