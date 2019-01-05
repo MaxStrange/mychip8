@@ -1,9 +1,14 @@
 //! Panel that can display stuff
 
 use super::piston_window as pwindow;
-use super::Point32;
-use super::DrawingContext;
+use super::{Point32, Rectangle, DrawingContext};
 
+/// Which direction an arrow is pointing
+#[allow(dead_code)]
+pub enum ArrowDirection {
+    Left,
+    Right,
+}
 
 /// A Panel on the GUI. Each Panel should be responsible for displaying stuff inside of itself.
 pub trait Panel {
@@ -78,7 +83,7 @@ pub trait Panel {
             window.draw_2d(event, |context, graphics| {
                 pwindow::rectangle(color, rectangle, context.transform, graphics);
             });
-            recs.push(Rectangle(row_origin, row_end));
+            recs.push(Rectangle{topleft: row_origin, bottomright: row_end});
         }
 
         recs
@@ -103,28 +108,4 @@ impl PanelData {
             origin: origin,
         }
     }
-}
-
-
-
-
-/// Top-left and bottom-right points
-#[derive(Debug, Clone)]
-struct Rectangle(Point, Point);
-
-impl Rectangle {
-    pub fn height(&self) -> u32 {
-        (self.1).1 - (self.0).1
-    }
-
-    pub fn width(&self) -> u32 {
-        (self.1).0 - (self.0).0
-    }
-}
-
-/// Which direction an arrow is pointing
-#[allow(dead_code)]
-enum ArrowDirection {
-    Left,
-    Right,
 }
