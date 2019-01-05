@@ -115,7 +115,7 @@ impl Chip8 {
                 break;
             }
 
-            // Possibl clear the display
+            // Possibly clear the display
             if self.should_clear_chip8_display {
                 self.user_interface.clear_chip8(&pistonevent);
             }
