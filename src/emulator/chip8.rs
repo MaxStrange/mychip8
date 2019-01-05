@@ -27,17 +27,17 @@ pub struct Chip8 {
     debugrx: mpsc::Receiver<EmulatorCommand>,
     /// Debug pipe sending end
     debugtx: mpsc::Sender<EmulatorResponse>,
+    /// Special index register - generally used to store memory addresses
+    index: u16,
     /// The RAM:
     /// 0x0000 to 0x01FF is reserved for the interpreter
     /// 0x0200 to 0x0FFF is where the ROM will be loaded
     memory: [u8; MEMORY_LENGTH_NBYTES],
-    /// The Chip-8 has 15 1-byte general purpose registers and one that is used as a carry flag.
-    registers:  RegisterArray,
     /// Program counter
     pc: u16,
-    /// Special index register - generally used to store memory addresses
-    index: u16,
-    /// Stack pointer - simply an index into the stack, which is up to 16 addresses
+    /// The Chip-8 has 15 1-byte general purpose registers and one that is used as a carry flag.
+    registers:  RegisterArray,
+   /// Stack pointer - simply an index into the stack, which is up to 16 addresses
     sp: u8,
     /// The stack is implemented as its own array of 16 16-bit values, rather than just a section of RAM
     stack: [u16; STACK_SIZE_N_ADDRS],
@@ -875,6 +875,7 @@ impl Chip8 {
         Ok(2)
     }
 
+    /// Execute the given instruction and return failure message or success and program counter increment.
     fn execute(&mut self, op: Opcode) -> EmuResult {
         match op {
             Opcode::BRK => self.execute_brk(),
