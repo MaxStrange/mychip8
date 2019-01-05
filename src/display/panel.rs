@@ -17,8 +17,7 @@ pub trait Panel {
     fn new(origin: Point32, height: u32, width: u32) -> Self;
 
     /// Clear the Panel, setting it back to its default display state.
-    fn clear(&mut self, args: DrawingContext) {
-        let (window, event) = (args.window, args.event);
+    fn clear(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
         let state = self.get_state();
         let (origin, width_npixels, height_npixels) = (state.origin, state.width_npixels, state.height_npixels);
         let rect = [origin.x as f64, origin.y as f64, (origin.x + width_npixels) as f64, (origin.y + height_npixels) as f64];
@@ -31,11 +30,10 @@ pub trait Panel {
     fn get_state(&self) -> PanelData;
 
     /// Take whatever you need from the provided DrawingContext and draw on this Panel.
-    fn draw(&mut self, args: DrawingContext);
+    fn draw(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, args: DrawingContext);
 
     /// Draws a small arrow at the given location pointing the given direction.
-    fn draw_arrow(&mut self, args: DrawingContext, direction: ArrowDirection, topleft: Point32) {
-        let (window, event) = (args.window, args.event);
+    fn draw_arrow(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, direction: ArrowDirection, topleft: Point32) {
         let arrow_height = 12;
         let arrow_width = 6;
         let arrow_length = 24;
@@ -66,8 +64,7 @@ pub trait Panel {
     /// drawing text against in rows.
     ///
     /// Returns the rectangles that are used.
-    fn draw_rows(&mut self, args: DrawingContext, nrows: usize) -> Vec<Rectangle> {
-        let (window, event) = (args.window, args.event);
+    fn draw_rows(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, nrows: usize) -> Vec<Rectangle> {
         let state = self.get_state();
         let (height_npixels, width_npixels, origin) = (state.height_npixels, state.width_npixels, state.origin);
         let mut recs = Vec::<Rectangle>::new();
@@ -91,6 +88,7 @@ pub trait Panel {
 }
 
 /// A Panel is a rectangular portion of the GUI window. This is the data that is required by one.
+#[derive(Debug, Clone)]
 pub struct PanelData {
     /// Height of the Panel in pixels
     pub height_npixels: u32,
