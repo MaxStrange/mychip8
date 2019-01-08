@@ -1,7 +1,7 @@
 //! The GUI
 
 use super::panel::Panel;
-use super::chip8panel::Chip8Panel;
+use super::chip8panel::{self, Chip8Panel};
 use super::rampanel::RamPanel;
 use super::stackpanel::StackPanel;
 use super::piston_window as pwindow;
@@ -12,18 +12,12 @@ use super::{Point32, DrawingContext};
 const WIDTH_NPIXELS: u32 = 640;
 /// Height of the whole GUI in pixels
 const HEIGHT_NPIXELS: u32 = 480;
-/// The pixel scale factor
-const CHIP8_SCALE_FACTOR: f64 = 4.0;
-/// The width of the Chip-8 display in pixels before applying the scale factor
-const CHIP8_WIDTH_BEFORE_SF: u32 = 128;
 /// The width of the Chip-8 display in pixels after applying the scale factor
-const CHIP8_WIDTH_AFTER_SF: u32 = (CHIP8_WIDTH_BEFORE_SF as f64 * CHIP8_SCALE_FACTOR) as u32;
+const CHIP8_WIDTH_AFTER_SF: u32 = (chip8panel::CHIP8_WIDTH_BEFORE_SF as f64 * chip8panel::CHIP8_SCALE_FACTOR) as u32;
 /// The width of the right GUI panel in pixels
 const RIGHT_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS - CHIP8_WIDTH_AFTER_SF;
-/// The height of the Chip-8 display in pixels before applying the scale factor
-const CHIP8_HEIGHT_BEFORE_SF: u32 = 64;
 /// The height of the Chip-8 display in pixels after applying the scale factor
-const CHIP8_HEIGHT_AFTER_SF: u32 = (CHIP8_HEIGHT_BEFORE_SF as f64 * CHIP8_SCALE_FACTOR) as u32;
+const CHIP8_HEIGHT_AFTER_SF: u32 = (chip8panel::CHIP8_HEIGHT_BEFORE_SF as f64 * chip8panel::CHIP8_SCALE_FACTOR) as u32;
 /// The height of the bottom panel in pixels
 const BOTTOM_PANEL_HEIGHT_NPIXELS: u32 = HEIGHT_NPIXELS - CHIP8_HEIGHT_AFTER_SF;
 /// The height of the right panel in pixels
@@ -91,8 +85,7 @@ impl Gui {
 
     /// Returns true if any pixel in the given sprite overwrites any pixels of any sprites already in the panel.
     pub fn draw_sprite(&mut self, spr: sprite::Sprite) -> bool {
-        // TODO
-        false
+        self.chip8_panel.add_sprite(spr)
     }
 
     /// Draw the video game display

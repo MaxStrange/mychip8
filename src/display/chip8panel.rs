@@ -1,120 +1,47 @@
 use super::panel::{self, PanelData};
 use super::piston_window as pwindow;
 use super::{DrawingContext, Point32};
+use super::sprite;
 
+/// How often to force refresh of the display.
+const DRAW_INTERVAL: usize = 1;
 /// The color of sprites (pixels that are on)
 const SPRITE_COLOR: &str = "001a00";
 /// The color of the Chip8 background (pixels that are off)
 const BACKGROUND_COLOR: &str = "e6ffcc";
+/// The pixel scale factor
+pub const CHIP8_SCALE_FACTOR: f64 = 4.0;
+/// The width of the Chip-8 display in pixels before applying the scale factor
+pub const CHIP8_WIDTH_BEFORE_SF: u32 = 128;
+/// The height of the Chip-8 display in pixels before applying the scale factor
+pub const CHIP8_HEIGHT_BEFORE_SF: u32 = 64;
 
-
-/// This Panel is the Chip8 display.
-pub struct Chip8Panel {
-    /// The state that is common to each type of Panel (height, width, origin, etc.)
-    data: panel::PanelData,
-    /// Whether we have ever been drawn on.
-    never_drawn_on: bool,
-}
-
-impl panel::Panel for Chip8Panel {
-    fn new(origin: Point32, height: u32, width: u32) -> Self {
-        Chip8Panel {
-            data: panel::PanelData::new(origin, height, width),
-            never_drawn_on: true,
-        }
-    }
-
-    fn clear(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
-        let rect = [self.data.origin.x as f64, self.data.origin.y as f64, (self.data.origin.x + self.data.width_npixels) as f64, (self.data.origin.y + self.data.height_npixels) as f64];
-        window.draw_2d(event, |context, graphics| {
-            pwindow::rectangle(pwindow::color::hex(BACKGROUND_COLOR), rect, context.transform, graphics);
-        });
-        self.never_drawn_on = false;
-    }
-
-    fn draw(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, args: DrawingContext) {
-        // TODO
-    }
-
-    fn get_state(&self) -> PanelData {
-        self.data.clone()
-    }
-}
-
-//    /// Draws the given grid of pixels. This is pretty slow, so only pass in which pixels have changed on the screen.
-//    fn chip8_draw_grid(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, grid: &Vec<pixelgrid::Pixel>) {
-//        let spritecolor = pwindow::color::hex(SPRITE_COLOR);
-//        let backgroundcolor = pwindow::color::hex(BACKGROUND_COLOR);
-//
-//        // First set up the background in case this is the first call
-//        if self.never_drawn_on {
-//            self.chip8_clear_screen(window, event);
-//            self.never_drawn_on = false;
-//        }
-//
-//        window.draw_2d(event, |context, graphics| {
-//            for pixel in grid {
-//                let xored_color = if pixel.value == pixelgrid::Pxcolor::Black { spritecolor } else { backgroundcolor };
-//                let rect = [pixel.x as f64, pixel.y as f64, (pixel.x + pixel.ncols) as f64, (pixel.y + pixel.nrows) as f64];
-//                pwindow::rectangle(xored_color, rect, context.transform, graphics);
-//            }
-//        });
-//    }
-//
-
-use super::sprite;
-
+/// Possible pixel colors
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Pxcolor {
+enum Pxcolor {
     /// Sprite color
     Black,
     /// Background color
     White,
 }
 
-/// A PixelGrid is simply that: a 2D grid of pixels and associated methods.
-///
-/// We ignore the scale factors for the pixels and simply treat them as if they are truly pixels.
-/// It is the Panel's responsibility for drawing the Pixels correctly based on the scale factors.
-#[derive(Debug, Clone)]
-pub struct PixelGrid {
-    /// Number of rows of pixels
-    pub nrows: u32,
-    /// Number of columns of pixels
-    pub ncols: u32,
-    /// The Pixels contained in this grid.
-    pub pixels: Vec<Pixel>,
-    /// These are the Pixels that have been added as part of an add_sprite method call.
-    pub xors: Vec<Pixel>,
-}
-
 /// A Pixel is a virtual pixel - a solid black or solid white block at the appropriate scale factor.
 #[derive(Debug, Clone)]
-pub struct Pixel {
+struct Pixel {
     /// The x-location of this pixel in the scaled pixel screen
     pub x: u32,
     /// The y-location of this pixel in the scaled pixel screen
     pub y: u32,
-    /// The number of rows that this pixel occupies
-    pub nrows: u32,
-    /// The number of columns that this pixel occupies
-    pub ncols: u32,
     /// The color of this pixel.
     pub value: Pxcolor,
-    /// The scale factor for this pixel - i.e., how big it appears on screen.
-    /// A scalefactor of 4.0 would mean that every virtual pixel is actually 4x4 real pixels.
-    scalefactor: f64,
 }
 
 impl Pixel {
-    pub fn new(prescaled_x: u32, prescaled_y: u32, sf: f64) -> Self {
+    pub fn new(prescaled_x: u32, prescaled_y: u32) -> Self {
         Pixel {
-            x: (prescaled_x as f64 * sf) as u32,
-            y: (prescaled_y as f64 * sf) as u32,
-            nrows: sf as u32,
-            ncols: sf as u32,
+            x: (prescaled_x as f64 * CHIP8_SCALE_FACTOR) as u32,
+            y: (prescaled_y as f64 * CHIP8_SCALE_FACTOR) as u32,
             value: Pxcolor::White,
-            scalefactor: sf,
         }
     }
 
@@ -142,42 +69,68 @@ impl Pixel {
     }
 }
 
+/// A PixelGrid is simply that: a 2D grid of pixels and associated methods.
+///
+/// We ignore the scale factors for the pixels and simply treat them as if they are truly pixels.
+/// It is the Panel's responsibility for drawing the Pixels correctly based on the scale factors.
+#[derive(Debug, Clone)]
+struct PixelGrid {
+    /// Number of rows of pixels
+    pub nrows: u32,
+    /// Number of columns of pixels
+    pub ncols: u32,
+    /// The Pixels contained in this grid.
+    pub pixels: Vec<Pixel>,
+    /// Has the grid changed since the last time we painted? We will set this to true
+    /// internally whenever we know that it has, but it is the Pixel8Panel's responsibility
+    /// to set it back to false upon painting.
+    pub has_changed: bool,
+}
+
 impl PixelGrid {
-    pub fn new(nrows: u32, ncols: u32, scalefactor: f64) -> Self {
+    pub fn new(nrows: u32, ncols: u32) -> Self {
         // Create the grid from a bunch of pixels
         let mut pixels = Vec::<Pixel>::new();
         for r in 0..nrows {
             for c in 0..ncols {
-                pixels.push(Pixel::new(c, r, scalefactor));
+                pixels.push(Pixel::new(c, r));
             }
         }
 
-        // Construct and return it
         PixelGrid {
             nrows: nrows,
             ncols: ncols,
             pixels: pixels,
-            xors: Vec::<Pixel>::new(),
+            has_changed: true,
         }
     }
 
+    pub fn clear(&mut self) {
+        for p in self.pixels.iter_mut() {
+            p.value = Pxcolor::White;
+        }
+
+        self.has_changed = true;
+    }
+
     /// Adds the given sprite to the grid of pixels. If any part of this sprite overwrites any
-    /// part of any other sprite, true is returned. Clears the XORs and adds any new sprite pixels
-    /// to them.
+    /// part of any other sprite, true is returned.
     pub fn add_sprite(&mut self, s: &sprite::Sprite) -> bool {
+        let spritex = s.x % CHIP8_WIDTH_BEFORE_SF;
+        let spritey = s.y % CHIP8_HEIGHT_BEFORE_SF;
         let mut collision = false;
-        let start = s.y;
-        let end = s.y + s.rows.len() as u32;
-        self.xors.clear();
+        let start = spritey;
+        let end = spritey + s.rows.len() as u32;
 
         // Iterate from the top of the sprite downwards over however many rows the sprite contains
-        for (byte, y) in s.rows.iter().zip(start..end) {
+        for (byte, prewrap_y) in s.rows.iter().zip(start..end) {
+            let y = prewrap_y % CHIP8_HEIGHT_BEFORE_SF;
 
             // Each row in the sprite is a byte.
             // Iterate over that byte from left to right.
             for (bitidx, xadd) in (0..8).rev().zip(0..8) {
                 // Determine the x coordinate of this bit
-                let x = s.x + xadd as u32;
+                let x = (spritex + xadd as u32) % CHIP8_WIDTH_BEFORE_SF;
 
                 // Check the value of the sprite at that bit
                 let bit = if byte & (1 << bitidx) != 0 { 1 } else { 0 };
@@ -196,18 +149,89 @@ impl PixelGrid {
                 self.set_pixel_at(xored_value, x as usize, y as usize);
             }
         }
+
+        self.has_changed = true;
         collision
     }
 
-    /// Get the pixel at the given x and y
+    /// Get the pixel at the given x and y.
     fn get_pixel_at<'a>(&'a self, x: usize, y: usize) -> &'a Pixel {
         &self.pixels[(y * self.ncols as usize) + x]
     }
 
-    /// Set the value of the given pixel and add it to the xors.
+    /// Set the value of the given pixel.
     fn set_pixel_at(&mut self, val: Pxcolor, x: usize, y: usize) {
         let idx = (y * self.ncols as usize) + x;
         self.pixels[idx].value = val;
-        self.xors.push(self.pixels[idx].clone());
     }
 }
+
+/// This Panel is the Chip8 display.
+pub struct Chip8Panel {
+    /// The state that is common to each type of Panel (height, width, origin, etc.)
+    data: panel::PanelData,
+    /// The pixels to draw this iteration.
+    pixelgrid: PixelGrid,
+    /// Counter to keep track of force refresh periodically.
+    draw_ticks: usize,
+}
+
+impl panel::Panel for Chip8Panel {
+    fn new(origin: Point32, height: u32, width: u32) -> Self {
+        Chip8Panel {
+            data: panel::PanelData::new(origin, height, width),
+            pixelgrid: PixelGrid::new(CHIP8_WIDTH_BEFORE_SF, CHIP8_HEIGHT_BEFORE_SF),
+            draw_ticks: 0,
+        }
+    }
+
+    fn clear(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event) {
+        self.pixelgrid.clear();
+        self.draw(window, event, DrawingContext {
+            pc: None,
+            sp: None,
+            ram: None,
+            stack: None,
+        });
+    }
+
+    fn draw(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, _args: DrawingContext) {
+        if self.pixelgrid.has_changed || self.draw_ticks % DRAW_INTERVAL == 0 {
+            let spritecolor = pwindow::color::hex(SPRITE_COLOR);
+            let backgroundcolor = pwindow::color::hex(BACKGROUND_COLOR);
+            let pixwidth = CHIP8_SCALE_FACTOR as u32;
+
+            window.draw_2d(event, |context, graphics| {
+                for pixel in self.pixelgrid.pixels.iter() {
+                    let xored_color = if pixel.value == Pxcolor::Black { spritecolor } else { backgroundcolor };
+                    let x1 = pixel.x as f64;
+                    let y1 = pixel.y as f64;
+                    let x2 = ((pixel.x + pixwidth) % CHIP8_WIDTH_BEFORE_SF) as f64;
+                    let y2 = ((pixel.y + pixwidth) % CHIP8_HEIGHT_BEFORE_SF) as f64;
+                    let rect = [x1, y1, x2, y2];
+                    pwindow::rectangle(xored_color, rect, context.transform, graphics);
+                }
+            });
+        }
+
+        self.pixelgrid.has_changed = false;
+        self.draw_ticks = self.draw_ticks.wrapping_add(1);
+    }
+
+    fn get_state(&self) -> PanelData {
+        self.data.clone()
+    }
+}
+
+impl Chip8Panel {
+    /// Adds the given Sprite to the display the next time draw() is called. Returns true if any part of
+    /// this Sprite overwrites any part of any Sprite already in existence.
+    pub fn add_sprite(&mut self, spr: sprite::Sprite) -> bool {
+        self.pixelgrid.add_sprite(&spr)
+    }
+}
+
+//    /// Draws the given grid of pixels. This is pretty slow, so only pass in which pixels have changed on the screen.
+//    fn chip8_draw_grid(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, grid: &Vec<pixelgrid::Pixel>) {
+//    }
+//

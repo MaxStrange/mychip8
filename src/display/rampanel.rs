@@ -40,7 +40,7 @@ impl panel::Panel for RamPanel {
             self.update_cache(pc, &ram);
         }
 
-        self.draw_ticks.wrapping_add(1);
+        self.draw_ticks = self.draw_ticks.wrapping_add(1);
     }
 
     fn get_state(&self) -> PanelData {

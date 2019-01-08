@@ -6,7 +6,7 @@ use super::{DrawingContext, Point32};
 
 /// Draw every this many iterations regardless of whether anything has changed on canvas.
 /// This is useful to force a redraw periodically.
-const DRAW_INTERVAL: usize = 1000;
+const DRAW_INTERVAL: usize = 1;
 
 /// This Panel is the display window for the stack. It shows the stack to the user for debug purposes.
 pub struct StackPanel {
@@ -40,7 +40,7 @@ impl panel::Panel for StackPanel {
             self.update_cache(sp, &stack);
         }
 
-        self.draw_ticks.wrapping_add(1);
+        self.draw_ticks = self.draw_ticks.wrapping_add(1);
     }
 
     fn get_state(&self) -> PanelData {
