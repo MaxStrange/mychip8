@@ -118,6 +118,7 @@ impl Chip8 {
             // Possibly clear the display
             if self.should_clear_chip8_display {
                 self.user_interface.clear_chip8(&pistonevent);
+                self.should_clear_chip8_display = false;
             }
 
             // Draw everything

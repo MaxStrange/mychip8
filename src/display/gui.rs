@@ -33,12 +33,6 @@ const BOTTOM_PANEL_WIDTH_NPIXELS: u32 = WIDTH_NPIXELS;
 /// The radius of the boarder
 const BORDER_RADIUS: f64 = 3.0;
 
-pub enum PanelType {
-    Chip8,
-    Ram,
-    Stack,
-}
-
 /// The whole GUI for the Chip8, including several Panels.
 pub struct Gui {
     chip8_panel: Chip8Panel,
@@ -62,15 +56,17 @@ impl Gui {
     }
 
     pub fn clear_chip8(&mut self, event: &pwindow::Event) {
-        // TODO
+        self.chip8_panel.clear(&mut self.window, event);
     }
 
+    #[allow(dead_code)]
     pub fn clear_ram(&mut self, event: &pwindow::Event) {
-        // TODO
+        self.ram_panel.clear(&mut self.window, event);
     }
 
+    #[allow(dead_code)]
     pub fn clear_stack(&mut self, event: &pwindow::Event) {
-        // TODO
+        self.stack_panel.clear(&mut self.window, event);
     }
 
     /// Draws the borders between the panels
@@ -106,18 +102,33 @@ impl Gui {
     /// function should get called once per emulation cycle, or perhaps only whenever
     /// anything has changed in the display.
     pub fn draw_chip8(&mut self, event: &pwindow::Event) {
-        // TODO
+        self.chip8_panel.draw(&mut self.window, event, DrawingContext {
+            pc: None,
+            sp: None,
+            ram: None,
+            stack: None,
+        })
     }
 
     /// Draw the RAM around where the program counter is currently.
     ///
     /// Includes disassembly of instructions... if I ever get around to that.
     pub fn draw_ram(&mut self, event: &pwindow::Event, pc: u16, ram: &[u8]) {
-        // TODO
+        self.ram_panel.draw(&mut self.window, event, DrawingContext {
+            pc: Some(pc),
+            sp: None,
+            ram: Some(ram.to_vec()),
+            stack: None,
+        });
     }
 
     /// Draw the stack, including an indication of where the stack pointer is.
     pub fn draw_stack(&mut self, event: &pwindow::Event, sp: u8, stack: &[u16]) {
-        // TODO
+        self.stack_panel.draw(&mut self.window, event, DrawingContext {
+            pc: None,
+            sp: Some(sp),
+            ram: None,
+            stack: Some(stack.to_vec()),
+        });
     }
 }
