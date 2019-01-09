@@ -104,6 +104,7 @@ mod tests {
 
     /// Sends the given `msg`, then waits to hear back and returns the response.
     fn send_and_receive(msg: EmulatorCommand, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
+        println!("Sending {:?}", msg);
         tx.send(msg).expect("Could not send.");
         get_response(rx)
     }
@@ -532,13 +533,18 @@ mod tests {
     fn test_drwvxvynibble() {
         let (emu, tx, rx) = emulate(path::Path::new("testprograms/DRWVxVyNibble/drwvxvynibbletest.bin"));
 
+        // TODO: There's a problem with this test somewhere
+
         // Let program draw some sprites, then check VF for collision
         assert_register(15, 0, &tx, &rx);
 
+        // Continue
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send");
+
         // Do it again
-        send_and_receive(EmulatorCommand::ResumeExecution, &tx, &rx);
         assert_register(15, 1, &tx, &rx);
 
+        // Quit
         exit_and_join(emu, &tx);
     }
 }

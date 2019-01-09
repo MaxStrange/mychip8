@@ -230,8 +230,3 @@ impl Chip8Panel {
         self.pixelgrid.add_sprite(&spr)
     }
 }
-
-//    /// Draws the given grid of pixels. This is pretty slow, so only pass in which pixels have changed on the screen.
-//    fn chip8_draw_grid(&mut self, window: &mut pwindow::PistonWindow, event: &pwindow::Event, grid: &Vec<pixelgrid::Pixel>) {
-//    }
-//

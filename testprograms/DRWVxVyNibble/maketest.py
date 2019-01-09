@@ -27,9 +27,9 @@ ldx3 = b'\x6D\xC0' # Load VD with 0xC0 (x-coordinate for third sprite)
 ldy3 = b'\x6E\xC1' # Load VE with 0xC1 (y-coordinate for third sprite)
 ldx4 = b'\x6D\xC0' # Load VD with 0xC0 (x-coordinate for fourth sprite)
 ldy4 = b'\x6E\xC0' # Load VE with 0xC0 (y-coordinate for fourth sprite)
-ldi2 = b'\xA2\x48' # Load I with 0x248 (the second sprite's starting address)
-ldi3 = b'\xA2\x4C' # Load I with 0x24C (the third sprite's starting address)
-ldi4 = b'\xA2\x52' # Load I with 0x252 (the fourth sprite's starting address)
+ldi2 = b'\xA2\x44' # Load I with 0x244 (the second sprite's starting address)
+ldi3 = b'\xA2\x46' # Load I with 0x246 (the third sprite's starting address)
+ldi4 = b'\xA2\x49' # Load I with 0x249 (the fourth sprite's starting address)
 with open("drwvxvynibbletest.bin", 'wb') as f:
     f.write(ldi)   # 0x0200  <-- Set I to where we will dump the sprites
     f.write(ld0)   # 0x0202  <-- Load V0 with sprite portion 0
@@ -64,19 +64,19 @@ with open("drwvxvynibbletest.bin", 'wb') as f:
     f.write(dr4)   # 0x023C  <-- Draw fourth sprite at x, y
     f.write(brk)   # 0x023E  <-- Break to check for collision
 
-    f.write(nop)   # 0x0240  ######## 0b1111 1111 0xFF
-    f.write(nop)   # 0x0242  # #  # # 0b1010 0101 0xA5
-    f.write(nop)   # 0x0244  #  ### # 0b1001 1101 0x9D
-    f.write(nop)   # 0x0246  ######## 0b1111 1111 0xFF
+    f.write(b'\x00')   # 0x0240  ######## 0b1111 1111 0xFF
+    f.write(b'\x00')   # 0x0241  # #  # # 0b1010 0101 0xA5
+    f.write(b'\x00')   # 0x0242  #  ### # 0b1001 1101 0x9D
+    f.write(b'\x00')   # 0x0243  ######## 0b1111 1111 0xFF
 
-    f.write(nop)   # 0x0248  #      # 0b1000 0001 0x81
-    f.write(nop)   # 0x024A  ######## 0b1111 1111 0xFF
+    f.write(b'\x00')   # 0x0244  #      # 0b1000 0001 0x81
+    f.write(b'\x00')   # 0x0245  ######## 0b1111 1111 0xFF
 
-    f.write(nop)   # 0x024C      #    0b0000 1000 0x08
-    f.write(nop)   # 0x024E    #####  0b0011 1110 0x3E
-    f.write(nop)   # 0x0250   ####### 0b0111 1111 0x7F
+    f.write(b'\x00')   # 0x0246      #    0b0000 1000 0x08
+    f.write(b'\x00')   # 0x0247    #####  0b0011 1110 0x3E
+    f.write(b'\x00')   # 0x0248   ####### 0b0111 1111 0x7F
 
-    f.write(nop)   # 0x0252  ### #### 0b1110 1111 0xEF
-    f.write(nop)   # 0x0254  ######## 0b1111 1111 0xFF
-    f.write(nop)   # 0x0256  ######## 0b1111 1111 0xFF
-    f.write(nop)   # 0x0258  ######## 0b1111 1111 0xFF
+    f.write(b'\x00')   # 0x0249  ### #### 0b1110 1111 0xEF
+    f.write(b'\x00')   # 0x024A  ######## 0b1111 1111 0xFF
+    f.write(b'\x00')   # 0x024B  ######## 0b1111 1111 0xFF
+    f.write(b'\x00')   # 0x024C  ######## 0b1111 1111 0xFF
