@@ -96,7 +96,7 @@ mod tests {
 
     /// Handles getting the response from the RX pipe, dealing with timeouts and errors as appropriate.
     fn get_response(rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
-        match rx.recv_timeout(time::Duration::new(8, 0)) {
+        match rx.recv_timeout(time::Duration::new(10, 0)) {
             Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
             Ok(response) => response,
         }
@@ -532,8 +532,6 @@ mod tests {
     #[test]
     fn test_drwvxvynibble() {
         let (emu, tx, rx) = emulate(path::Path::new("testprograms/DRWVxVyNibble/drwvxvynibbletest.bin"));
-
-        // TODO: There's a problem with this test somewhere
 
         // Let program draw some sprites, then check VF for collision
         assert_register(15, 0, &tx, &rx);
