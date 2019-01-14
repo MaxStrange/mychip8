@@ -11,6 +11,7 @@ pub mod chip8;
 pub mod debugiface;
 
 /* Internal Mods */
+mod keyboard;
 mod opcode;
 mod register;
 

@@ -2,6 +2,7 @@ use super::Address;
 use super::opcode::Opcode;
 use super::debugiface::{EmulatorCommand, EmulatorResponse};
 use super::display::{gui, sprite};
+use super::keyboard;
 use super::rand::prelude::*;
 use super::register::{Register, RegisterArray};
 use std::fmt::{self, Write};
@@ -674,14 +675,17 @@ impl Chip8 {
     /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
     /// in the down position, the program counter is increased by 2.
     fn execute_skpvx(&mut self, x: Register) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
-        // TODO
-
-        Err("Not yet implemented.".to_string())
+        let key = keyboard::map(vx).expect(format!("Could not convert value stored in register {} (0x{:X}) into character.", x, vx).as_str());
+        if keyboard::check_keyboard_for_key(key) {
+            Ok(4)
+        } else {
+            Ok(2)
+        }
     }
 
     /// Executes a SKNP instruction on register `x`.
