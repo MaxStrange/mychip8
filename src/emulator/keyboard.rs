@@ -1,5 +1,6 @@
 //! This module contains all the code dealing with the user's inputs on the keyboard.
 use std::io::{self, Read};
+use std::sync::mpsc;
 
 /// A single keystroke as read directly from a keyboard.
 pub type Key = String;
@@ -41,14 +42,53 @@ pub fn map(byte: u8) -> Result<Key, String> {
     }.to_string())
 }
 
-/// Returns true if the given key is currently depressed on the keyboard.
-pub fn check_keyboard_for_key(k: Key) -> bool {
-    // TODO: Make sure this is how keyboard input works
-    let mut buffer = String::new();
-    let stdin = io::stdin();
-    let mut handle = stdin.lock();
-    match handle.read_to_string(&mut buffer) {
-        Err(_msg) => false,
-        Ok(_nbytes) => buffer.contains(k.as_str()),
+/// A Keyboard is responsible for taking in input from the user, and also providing mechanisms to test itself.
+pub struct Keyboard {
+    /// An optional pipe that a user of this struct can use to bypass stdin.
+    /// If present, we will check this instead of stdin for characters.
+    debug_rx: Option<mpsc::Receiver<String>>,
+}
+
+impl Keyboard {
+    /// Constructs a new Keyboard instance.
+    ///
+    /// If `debug_rx` is present, we use it instead of stdin.
+    pub fn new(debug_rx: Option<mpsc::Receiver<String>>) -> Self {
+        Keyboard {
+            debug_rx: debug_rx,
+        }
+    }
+
+    /// Returns true if the given key is currently depressed on the keyboard.
+    pub fn check_keyboard_for_key(&self, k: Key) -> bool {
+        let timeout = std::time::Duration::from_secs(5);
+
+        let input = match &self.debug_rx {
+            // We have a debug pipe, so use that instead of the normal keyboard input
+            Some(rx) => match rx.recv_timeout(timeout) {
+                Err(_timed_out_err) => panic!("Never received anything from the test interface over the debug rx pipe to the keyboard."),
+
+                // Match on the string we got over the debug interface
+                Ok(s) => s,
+            },
+
+            // We have no debug pipe, so use the normal keyboard input
+            None => {
+                let mut buffer = String::new();
+                let stdin = io::stdin();
+                let mut handle = stdin.lock();
+                match handle.read_to_string(&mut buffer) {
+                    Err(msg) => {
+                        println!("Got invald input over keyboard interface: {:?}", msg);
+                        return false;
+                    },
+
+                    // Match on the string we built from the keyboard input
+                    Ok(_nbytes) => buffer,
+                }
+            },
+        };
+
+        input.contains(k.as_str())
     }
 }

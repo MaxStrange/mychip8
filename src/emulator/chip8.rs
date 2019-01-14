@@ -30,6 +30,8 @@ pub struct Chip8 {
     debugtx: mpsc::Sender<EmulatorResponse>,
     /// Special index register - generally used to store memory addresses
     index: u16,
+    /// The input the user will use to play the games
+    input: keyboard::Keyboard,
     /// The RAM:
     /// 0x0000 to 0x01FF is reserved for the interpreter
     /// 0x0200 to 0x0FFF is where the ROM will be loaded
@@ -72,7 +74,7 @@ impl fmt::Debug for Chip8 {
 
 impl Chip8 {
     /// Create a new instance of the emulator.
-    pub fn new(tx: mpsc::Sender<EmulatorResponse>, rx: mpsc::Receiver<EmulatorCommand>) -> Self {
+    pub fn new(tx: mpsc::Sender<EmulatorResponse>, rx: mpsc::Receiver<EmulatorCommand>, mock_input: Option<mpsc::Receiver<String>>) -> Self {
         Chip8 {
             debug_should_exit: false,
             debugrx: rx,
@@ -81,6 +83,7 @@ impl Chip8 {
             registers: RegisterArray::new(),
             pc: PROGRAM_START_BYTE_ADDR,
             index: 0,
+            input: keyboard::Keyboard::new(mock_input),
             should_clear_chip8_display: true,
             sp: 0,
             stack: [0u16; 16],
@@ -681,7 +684,7 @@ impl Chip8 {
         };
 
         let key = keyboard::map(vx).expect(format!("Could not convert value stored in register {} (0x{:X}) into character.", x, vx).as_str());
-        if keyboard::check_keyboard_for_key(key) {
+        if self.input.check_keyboard_for_key(key) {
             Ok(4)
         } else {
             Ok(2)

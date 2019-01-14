@@ -16,7 +16,9 @@ use std::process;
 use std::thread;
 
 /// Creates an emulator thread and returns it along with the pipe to and from it.
-pub fn emulate(progpath: &path::Path) -> (thread::JoinHandle<()>, mpsc::Sender<dbg::EmulatorCommand>, mpsc::Receiver<dbg::EmulatorResponse>) {
+/// If we are testing, you should pass in true for fake_input, in which case we will also return
+/// a pipe to the emulator that will be used to read data from (instead of using the typical input mechanism).
+pub fn emulate(progpath: &path::Path, fake_input: bool) -> (thread::JoinHandle<()>, mpsc::Sender<dbg::EmulatorCommand>, mpsc::Receiver<dbg::EmulatorResponse>, Option<mpsc::Sender<String>>) {
     // Load the contents from the file
     let mut contents = match fs::File::open(progpath) {
         Ok(b) => b,
@@ -38,11 +40,17 @@ pub fn emulate(progpath: &path::Path) -> (thread::JoinHandle<()>, mpsc::Sender<d
     // Make some pipes. Use these for debugging and in the test rig.
     let (mytx, yourrx): (mpsc::Sender<dbg::EmulatorCommand>, mpsc::Receiver<dbg::EmulatorCommand>) = mpsc::channel();
     let (yourtx, myrx): (mpsc::Sender<dbg::EmulatorResponse>, mpsc::Receiver<dbg::EmulatorResponse>) = mpsc::channel();
+    let (mock_input_tx, mock_input_rx): (Option<mpsc::Sender<String>>, Option<mpsc::Receiver<String>>) = if fake_input {
+        let (a, b) = mpsc::channel();
+        (Some(a), Some(b))
+    } else {
+        (None, None)
+    };
 
     // Spawn an emulator. We can send it commands while it is running. Useful for debugging.
     let emuthread = thread::spawn(move || {
         // Create and initialize a Chip 8 instance
-        let mut emu = chip8::Chip8::new(yourtx, yourrx);
+        let mut emu = chip8::Chip8::new(yourtx, yourrx, mock_input_rx);
 
         // Load the program into memory
         match emu.load(&binary) {
@@ -56,7 +64,7 @@ pub fn emulate(progpath: &path::Path) -> (thread::JoinHandle<()>, mpsc::Sender<d
         emu.run();
     });
 
-    (emuthread, mytx, myrx)
+    (emuthread, mytx, myrx, mock_input_tx)
 }
 
 fn main() {
@@ -81,8 +89,9 @@ fn main() {
         process::exit(1);
     }
 
+    let mock_input = false;
     // _mytx and _myrx are used in testing, not in main
-    let (emuthread, _mytx, _myrx) = emulate(&progpath);
+    let (emuthread, _mytx, _myrx, _mock_input_tx) = emulate(&progpath, mock_input);
 
     emuthread.join().expect("Did not join emu thread correctly.");
 }
@@ -157,21 +166,21 @@ mod tests {
     /// SYS is a NOP, so really just test that nothing breaks.
     #[test]
     fn test_sys() {
-        let (emu, tx, _rx) = emulate(path::Path::new("testprograms/SYS/systest.bin"));
+        let (emu, tx, _rx, _mockinput) = emulate(path::Path::new("testprograms/SYS/systest.bin"), false);
         exit_and_join(emu, &tx);
     }
 
     /// CLS is not really testable from this test harness - requires manual oversight. Included here to make sure it doesn't break things.
     #[test]
     fn test_cls() {
-        let (emu, tx, _rx) = emulate(path::Path::new("testprograms/CLS/clstest.bin"));
+        let (emu, tx, _rx, _mockinput) = emulate(path::Path::new("testprograms/CLS/clstest.bin"), false);
         exit_and_join(emu, &tx);
     }
 
     /// RET test. Go to a subroutine then return from it and make sure we break at the right place.
     #[test]
     fn test_ret() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/RET/rettest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/RET/rettest.bin"), false);
 
         // Check that PC is at correct location
         assert_pc(0x0202, &tx, &rx);
@@ -182,7 +191,7 @@ mod tests {
     /// JP test. Jump to a specific address and break. Check PC.
     #[test]
     fn test_jp() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/JP/jptest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/JP/jptest.bin"), false);
 
         // Check that PC is at correct location
         assert_pc(0x020A, &tx, &rx);
@@ -193,7 +202,7 @@ mod tests {
     /// CALL test. Jump to an address and break. Check PC and stack.
     #[test]
     fn test_call() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/CALL/calltest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/CALL/calltest.bin"), false);
 
         // Check that PC is at correct location
         assert_pc(0x020A, &tx, &rx);
@@ -211,7 +220,7 @@ mod tests {
     /// and seeing if we break at the appropriate place.
     #[test]
     fn test_sevxbyte() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SEVxByte/sevxbytetest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SEVxByte/sevxbytetest.bin"), false);
 
         // Check that the PC is at the correct location
         assert_pc(0x020C, &tx, &rx);
@@ -226,7 +235,7 @@ mod tests {
     /// and seeing if we break at the appropriate place.
     #[test]
     fn test_snevxbyte() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SNEVxByte/snevxbytetest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SNEVxByte/snevxbytetest.bin"), false);
 
         // Check that the PC is at the correct location
         assert_pc(0x020C, &tx, &rx);
@@ -241,7 +250,7 @@ mod tests {
     /// and then checking if we break at the right place.
     #[test]
     fn test_sevxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SEVxVy/sevxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SEVxVy/sevxvytest.bin"), false);
 
         // Check that the PC is at the correct location
         assert_pc(0x020C, &tx, &rx);
@@ -258,7 +267,7 @@ mod tests {
     /// Test LDVxByte instruction by loading each general purpose register with a known value and checking them.
     #[test]
     fn test_ldvxybyte() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/LDVxByte/ldvxbytetest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/LDVxByte/ldvxbytetest.bin"), false);
 
         // Check that the PC is where we expect
         assert_pc(0x021E, &tx, &rx);
@@ -286,7 +295,7 @@ mod tests {
     /// Test ADDVxByte instruction.
     #[test]
     fn test_addvxbyte() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/ADDVxByte/addvxbytetest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/ADDVxByte/addvxbytetest.bin"), false);
 
         // Check that the register is what we expect it should be
         assert_register(10, 0x67, &tx, &rx);
@@ -297,7 +306,7 @@ mod tests {
     /// Test LDVxVy instruction.
     #[test]
     fn test_ldvxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/LDVxVy/ldvxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/LDVxVy/ldvxvytest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x02, &tx, &rx);
@@ -311,7 +320,7 @@ mod tests {
     /// Test the ORVxVy instruction.
     #[test]
     fn test_orvxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/ORVxVy/orvxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/ORVxVy/orvxvytest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x0E | 0x03, &tx, &rx);
@@ -322,7 +331,7 @@ mod tests {
     /// Test the ANDVxVy instruction.
     #[test]
     fn test_andvxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/ANDVxVy/andvxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/ANDVxVy/andvxvytest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x0E & 0x03, &tx, &rx);
@@ -333,7 +342,7 @@ mod tests {
     /// Test the XORVxVy instruction.
     #[test]
     fn test_xorvxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/XORVxVy/xorvxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/XORVxVy/xorvxvytest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x0E ^ 0x03, &tx, &rx);
@@ -344,7 +353,7 @@ mod tests {
     /// Test ADDVxVy with carry bit and without.
     #[test]
     fn test_addvxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/ADDVxVy/addvxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/ADDVxVy/addvxvytest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x11, &tx, &rx);
@@ -367,7 +376,7 @@ mod tests {
     /// Test SUBVxVy with borrow/no-borrow.
     #[test]
     fn test_subvxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SUBVxVy/subvxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SUBVxVy/subvxvytest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x0B, &tx, &rx);
@@ -390,7 +399,7 @@ mod tests {
     /// Test SHRVx with LSB/no LSB
     #[test]
     fn test_shrvx() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SHRVx/shrvxtest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SHRVx/shrvxtest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x07, &tx, &rx);
@@ -413,7 +422,7 @@ mod tests {
     /// Test SUBVNxVy with borrow/no-borrow.
     #[test]
     fn test_subnvxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SUBNVxVy/subnvxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SUBNVxVy/subnvxvytest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x0B, &tx, &rx);
@@ -436,7 +445,7 @@ mod tests {
     /// Test SHLVx with LSB/no LSB
     #[test]
     fn test_shlvx() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SHLVx/shlvxtest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SHLVx/shlvxtest.bin"), false);
 
         // Check register VA
         assert_register(10, 0x1C, &tx, &rx);
@@ -460,7 +469,7 @@ mod tests {
     /// and then checking if we break at the right place.
     #[test]
     fn test_snevxvy() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/SNEVxVy/snevxvytest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/SNEVxVy/snevxvytest.bin"), false);
 
         // Check that the PC is at the correct location
         assert_pc(0x020C, &tx, &rx);
@@ -477,7 +486,7 @@ mod tests {
     /// Test LDIAddr by loading a byte into I and checking it.
     #[test]
     fn test_ldiaddr() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/LDIAddr/ldiaddrtest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/LDIAddr/ldiaddrtest.bin"), false);
 
         // Check that register I has the right value.
         assert_iregister(0x021E, &tx, &rx);
@@ -488,7 +497,7 @@ mod tests {
     /// Test JPV0Addr instruction by loading a value into v0, jumping, and seeing if the PC is in the right place.
     #[test]
     fn test_jpv0addr() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/JPV0Addr/jpv0addrtest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/JPV0Addr/jpv0addrtest.bin"), false);
 
         // Check that the PC is at the right place.
         assert_pc(0x020C, &tx, &rx);
@@ -499,7 +508,7 @@ mod tests {
     /// Test RNDVxByte instruction by getting ten random numbers and making sure they aren't all the same.
     #[test]
     fn test_rndvxbyte() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/RNDVxByte/rndvxbytetest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/RNDVxByte/rndvxbytetest.bin"), false);
 
         /* Collect ten random bytes */
         let mut randombytes = Vec::<u8>::new();
@@ -530,7 +539,7 @@ mod tests {
     /// Test DRWVxVyNibble instruction.
     #[test]
     fn test_drwvxvynibble() {
-        let (emu, tx, rx) = emulate(path::Path::new("testprograms/DRWVxVyNibble/drwvxvynibbletest.bin"));
+        let (emu, tx, rx, _mockinput) = emulate(path::Path::new("testprograms/DRWVxVyNibble/drwvxvynibbletest.bin"), false);
 
         // Let program draw some sprites, then check VF for collision
         assert_register(15, 0, &tx, &rx);
@@ -543,5 +552,11 @@ mod tests {
 
         // Quit
         exit_and_join(emu, &tx);
+    }
+
+    /// Test SKPVx instruction by using the mock input pipe to pretend to be a user pushing on the keyboard.
+    #[test]
+    fn test_skpvx() {
+        // TODO
     }
 }
