@@ -96,7 +96,7 @@ mod tests {
 
     /// Handles getting the response from the RX pipe, dealing with timeouts and errors as appropriate.
     fn get_response(rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
-        match rx.recv_timeout(time::Duration::new(10, 0)) {
+        match rx.recv_timeout(time::Duration::new(15, 0)) {
             Err(_) => panic!("Could not receive anything from the emulator. Probably it never reached a BRK."),
             Ok(response) => response,
         }
@@ -104,7 +104,6 @@ mod tests {
 
     /// Sends the given `msg`, then waits to hear back and returns the response.
     fn send_and_receive(msg: EmulatorCommand, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) -> EmulatorResponse {
-        println!("Sending {:?}", msg);
         tx.send(msg).expect("Could not send.");
         get_response(rx)
     }
