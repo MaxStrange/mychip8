@@ -557,6 +557,28 @@ mod tests {
     /// Test SKPVx instruction by using the mock input pipe to pretend to be a user pushing on the keyboard.
     #[test]
     fn test_skpvx() {
-        // TODO
+        let (emu, tx, rx, mk) = emulate(path::Path::new("testprograms/SKPVx/skpvxtest.bin"), true);
+        let mockinput = mk.unwrap();
+
+        // Send an input sequence that contains the character we are interested in
+        mockinput.send("asd".to_string()).expect("Could not send");
+
+        // Now tell the program to continue executing
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send resume command");
+
+        // Check that the program counter is where we expect
+        assert_pc(0x020C, &tx, &rx);
+
+        // Send an input sequence that does not contain the character we are interested in
+        mockinput.send("qwe".to_string()).expect("Could not send second thing");
+
+        // Continue again
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send second resume command");
+
+        // Check that the program counter is where we expect
+        assert_pc(0x0210, &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
     }
 }

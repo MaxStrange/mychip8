@@ -61,12 +61,10 @@ impl Keyboard {
 
     /// Returns true if the given key is currently depressed on the keyboard.
     pub fn check_keyboard_for_key(&self, k: Key) -> bool {
-        let timeout = std::time::Duration::from_secs(5);
-
         let input = match &self.debug_rx {
             // We have a debug pipe, so use that instead of the normal keyboard input
-            Some(rx) => match rx.recv_timeout(timeout) {
-                Err(_timed_out_err) => panic!("Never received anything from the test interface over the debug rx pipe to the keyboard."),
+            Some(rx) => match rx.recv() {
+                Err(_) => panic!("Never received anything from the test interface over the debug rx pipe to the keyboard."),
 
                 // Match on the string we got over the debug interface
                 Ok(s) => s,

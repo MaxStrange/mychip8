@@ -683,7 +683,11 @@ impl Chip8 {
             Err(msg) => return Err(msg),
         };
 
-        let key = keyboard::map(vx).expect(format!("Could not convert value stored in register {} (0x{:X}) into character.", x, vx).as_str());
+        let key = match keyboard::map(vx) {
+            Err(_) => return Ok(2),  // If the user presses a key that isn't part of the keyboard, we'll just ignore it.
+            Ok(k) => k,
+        };
+
         if self.input.check_keyboard_for_key(key) {
             Ok(4)
         } else {
