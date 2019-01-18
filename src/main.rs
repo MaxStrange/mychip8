@@ -609,4 +609,22 @@ mod tests {
         // Quit
         exit_and_join(emu, &tx);
     }
+
+    /// Test LDVxDT instruction.
+    #[test]
+    fn test_ldvxdt() {
+        let (emu, tx, rx, _) = emulate(path::Path::new("testprograms/LDVxDT/ldvxdttest.bin"), false);
+
+        // Set the emulator's clock rate while it waits around
+        tx.send(EmulatorCommand::SetClockRate(60)).expect("Could not set clock rate");
+
+        // Continue now that the CPU is the right Hz
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send resume command");
+
+        // Now let the emulator execute a known number of cycles, then make sure its delay timer is at a known value.
+        assert_register(5, 0x1E, &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
+    }
 }

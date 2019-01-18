@@ -16,22 +16,34 @@ const PROGRAM_START_BYTE_ADDR: u16 = 0x0200;
 const MAX_PROGRAM_SIZE_NBYTES: usize = MEMORY_LENGTH_NBYTES - (PROGRAM_START_BYTE_ADDR as usize);
 /// There are this many addresses in the special stack array at most.
 const STACK_SIZE_N_ADDRS: usize = 16;
+/// The rate at which the delay timer counts down in Hz.
+const DELAY_TIMER_CLOCK_RATE_HZ: u64 = 60;
+/// The rate at which the sound timer counts down in Hz.
+const SOUND_TIMER_CLOCK_RATE_HZ: u64 = 60;
+/// The default clock rate of the emulated CPU in Hz.
+const DEFAULT_CPU_CLOCK_RATE_HZ: u64 = 1000;
 
 /// In this module, most functions return an EmuResult, which returns either an error message or the number the PC should be incremented by.
 type EmuResult = Result<usize, String>;
 
 /// The Chip 8 emulator
 pub struct Chip8 {
+    /// The clock rate of the CPU we are emulating. There aren't really any limits on this.
+    clock_rate_hz: u64,
     /// Flag used in debugging to deterimine if the thread should exit
     debug_should_exit: bool,
     /// Debug pipe receiving end
     debugrx: mpsc::Receiver<EmulatorCommand>,
     /// Debug pipe sending end
     debugtx: mpsc::Sender<EmulatorResponse>,
+    /// Current value of the delay timer
+    delay_timer_value: u8,
     /// Special index register - generally used to store memory addresses
     index: u16,
     /// The input the user will use to play the games
     input: keyboard::Keyboard,
+    /// Monotonically increasing (until wraparound) count of clock cycles
+    instruction_count: usize,
     /// The RAM:
     /// 0x0000 to 0x01FF is reserved for the interpreter
     /// 0x0200 to 0x0FFF is where the ROM will be loaded
@@ -44,6 +56,8 @@ pub struct Chip8 {
     should_clear_chip8_display: bool,
     /// Stack pointer - simply an index into the stack, which is up to 16 addresses
     sp: u8,
+    /// Current value of the sound timer
+    sound_timer_value: u8,
     /// The stack is implemented as its own array of 16 16-bit values, rather than just a section of RAM
     stack: [u16; STACK_SIZE_N_ADDRS],
     /// The emulator GUI
@@ -76,16 +90,20 @@ impl Chip8 {
     /// Create a new instance of the emulator.
     pub fn new(tx: mpsc::Sender<EmulatorResponse>, rx: mpsc::Receiver<EmulatorCommand>, mock_input: Option<mpsc::Receiver<String>>) -> Self {
         Chip8 {
+            clock_rate_hz: DEFAULT_CPU_CLOCK_RATE_HZ,
             debug_should_exit: false,
             debugrx: rx,
             debugtx: tx,
+            delay_timer_value: 0,
             memory: [0u8; MEMORY_LENGTH_NBYTES],
             registers: RegisterArray::new(),
             pc: PROGRAM_START_BYTE_ADDR,
             index: 0,
             input: keyboard::Keyboard::new(mock_input),
+            instruction_count: 0,
             should_clear_chip8_display: true,
             sp: 0,
+            sound_timer_value: 0,
             stack: [0u16; 16],
             user_interface: gui::Gui::new(),
         }
@@ -119,6 +137,16 @@ impl Chip8 {
                 break;
             }
 
+            // Next check if we should decrement timers
+            let decrement_delay_timer: usize = (self.clock_rate_hz / DELAY_TIMER_CLOCK_RATE_HZ) as usize;
+            let decrement_sound_timer: usize = (self.clock_rate_hz / SOUND_TIMER_CLOCK_RATE_HZ) as usize;
+            if self.instruction_count % decrement_delay_timer == 0 {
+                self.delay_timer_value = if self.delay_timer_value > 0 { self.delay_timer_value - 1 } else { self.delay_timer_value };
+            }
+            if self.instruction_count % decrement_sound_timer == 0 {
+                self.sound_timer_value = if self.sound_timer_value > 0 { self.sound_timer_value - 1 } else { self.sound_timer_value };
+            }
+
             // Possibly clear the display
             if self.should_clear_chip8_display {
                 self.user_interface.clear_chip8(&pistonevent);
@@ -144,6 +172,7 @@ impl Chip8 {
                 },
             };
 
+
             // Execute instruction and increment the PC
             match self.execute(opcode) {
                 Ok(pcincr) => self.pc += pcincr as u16,
@@ -151,6 +180,9 @@ impl Chip8 {
                     panic!("Problem executing instruction {:?}: {}. State of us:\n{:?}", opcode, msg, self)
                 },
             }
+
+            // Increment the instruction count
+            self.instruction_count = self.instruction_count.wrapping_add(1);
         }
     }
 
@@ -204,6 +236,8 @@ impl Chip8 {
 
                 // Exit the emulator thread
                 EmulatorCommand::Exit => { self.debug_should_exit = true; break },
+
+                EmulatorCommand::SetClockRate(new_rate) => self.clock_rate_hz = new_rate,
             }
         }
         Ok(2)
@@ -721,14 +755,15 @@ impl Chip8 {
     ///
     /// The value of the delay timer is placed into Vx.
     fn execute_ldvxdt(&mut self, x: Register) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let delay_timer_value = self.delay_timer_value;
+        let vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
         };
 
-        // TODO
+        *vx = delay_timer_value;
 
-        Err("Not yet implemented.".to_string())
+        Ok(2)
     }
 
     /// Executes a LD instruction on register `x` from a key press.
@@ -750,14 +785,14 @@ impl Chip8 {
     ///
     /// The delay timer is set equal to the value of Vx.
     fn execute_lddtvx(&mut self, x: Register) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
-        // TODO
+        self.delay_timer_value = vx;
 
-        Err("Not yet implemented.".to_string())
+        Ok(2)
     }
 
     /// Executes a LD instruction on the sound timer and register `x`.

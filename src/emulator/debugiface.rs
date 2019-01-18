@@ -21,6 +21,8 @@ pub enum EmulatorCommand {
     PeekStack,
     /// Resume normal execution of the program.
     ResumeExecution,
+    /// Set the clock rate to the given value.
+    SetClockRate(u64),
 }
 
 /// The possible responses from the emulator in response to EmulatorCommands
