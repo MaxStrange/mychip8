@@ -61,7 +61,10 @@ impl Keyboard {
 
     /// Returns true if the given key is currently depressed on the keyboard.
     pub fn check_keyboard_for_key(&self, k: Key) -> bool {
-        let input = match &self.debug_rx {
+        let mut lowercase_key = k;
+        lowercase_key.make_ascii_lowercase();
+
+        let mut input = match &self.debug_rx {
             // We have a debug pipe, so use that instead of the normal keyboard input
             Some(rx) => match rx.recv() {
                 Err(_) => panic!("Never received anything from the test interface over the debug rx pipe to the keyboard."),
@@ -87,6 +90,7 @@ impl Keyboard {
             },
         };
 
-        input.contains(k.as_str())
+        input.make_ascii_lowercase();
+        input.contains(lowercase_key.as_str())
     }
 }
