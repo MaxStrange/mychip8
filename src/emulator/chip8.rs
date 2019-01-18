@@ -771,14 +771,15 @@ impl Chip8 {
     /// All execution stops until a key is pressed, then the value of that key
     /// is stored in Vx.
     fn execute_ldvxk(&mut self, x: Register) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let byte = self.input.wait_for_keypress();
+        let vx = match self.get_register(x) {
             Ok(r) => r,
             Err(msg) => return Err(msg),
         };
 
-        // TODO
+        *vx = byte;
 
-        Err("Not yet implemented.".to_string())
+        Ok(2)
     }
 
     /// Executes a LD instruction on the delay timer and register `x`.

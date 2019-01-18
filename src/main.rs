@@ -627,4 +627,20 @@ mod tests {
         // Quit
         exit_and_join(emu, &tx);
     }
+
+    /// Test the LDVxK instruction.
+    #[test]
+    fn test_ldvxk() {
+        let (emu, tx, rx, mk) = emulate(path::Path::new("testprograms/LDVxK/ldvxktest.bin"), true);
+        let mockinput = mk.unwrap();
+
+        // Send a key through the test interface
+        mockinput.send("s".to_string()).expect("Could not send over mockinput");
+
+        // Check that the register contains 's'
+        assert_register(2, 0x08, &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
+    }
 }
