@@ -85,7 +85,10 @@ impl Keyboard {
                     },
 
                     // Match on the string we built from the keyboard input
-                    Ok(_nbytes) => buffer,
+                    Ok(_nbytes) => match buffer.chars().last() {
+                        None => "".to_string(),
+                        Some(c) => c.to_string(),
+                    },
                 }
             },
         };

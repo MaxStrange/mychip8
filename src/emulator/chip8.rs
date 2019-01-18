@@ -700,14 +700,21 @@ impl Chip8 {
     /// Checks the keyboard, and if the key corresponding to the value of Vx is currently
     /// in the up position, the program counter is increased by 2.
     fn execute_sknpvx(&mut self, x: Register) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
-        // TODO
+        let key = match keyboard::map(vx) {
+            Err(_) => return Ok(2), // If the user presses a key that isn't part of the keyboard, we'll just ignore it.
+            Ok(k) => k,
+        };
 
-        Err("Not yet implemented.".to_string())
+        if self.input.check_keyboard_for_key(key) {
+            Ok(2)
+        } else {
+            Ok(4)
+        }
     }
 
     /// Executes a LD instruction on register `x` from the delay timer.
