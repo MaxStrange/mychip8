@@ -22,6 +22,24 @@ const DELAY_TIMER_CLOCK_RATE_HZ: u64 = 60;
 const SOUND_TIMER_CLOCK_RATE_HZ: u64 = 60;
 /// The default clock rate of the emulated CPU in Hz.
 const DEFAULT_CPU_CLOCK_RATE_HZ: u64 = 1000;
+/// The number of bytes in each of the hexadecimal sprites.
+const BYTES_PER_HEX_SPRITE: u16 = 5;
+const HEX_SPRITE_ZERO_ADDR: u16 = BYTES_PER_HEX_SPRITE * 0;
+const HEX_SPRITE_ONE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 1;
+const HEX_SPRITE_TWO_ADDR: u16 = BYTES_PER_HEX_SPRITE * 2;
+const HEX_SPRITE_THREE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 3;
+const HEX_SPRITE_FOUR_ADDR: u16 = BYTES_PER_HEX_SPRITE * 4;
+const HEX_SPRITE_FIVE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 5;
+const HEX_SPRITE_SIX_ADDR: u16 = BYTES_PER_HEX_SPRITE * 6;
+const HEX_SPRITE_SEVEN_ADDR: u16 = BYTES_PER_HEX_SPRITE * 7;
+const HEX_SPRITE_EIGHT_ADDR: u16 = BYTES_PER_HEX_SPRITE * 8;
+const HEX_SPRITE_NINE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 9;
+const HEX_SPRITE_A_ADDR: u16 = BYTES_PER_HEX_SPRITE * 10;
+const HEX_SPRITE_B_ADDR: u16 = BYTES_PER_HEX_SPRITE * 11;
+const HEX_SPRITE_C_ADDR: u16 = BYTES_PER_HEX_SPRITE * 12;
+const HEX_SPRITE_D_ADDR: u16 = BYTES_PER_HEX_SPRITE * 13;
+const HEX_SPRITE_E_ADDR: u16 = BYTES_PER_HEX_SPRITE * 14;
+const HEX_SPRITE_F_ADDR: u16 = BYTES_PER_HEX_SPRITE * 15;
 
 /// In this module, most functions return an EmuResult, which returns either an error message or the number the PC should be incremented by.
 type EmuResult = Result<usize, String>;
@@ -89,13 +107,16 @@ impl fmt::Debug for Chip8 {
 impl Chip8 {
     /// Create a new instance of the emulator.
     pub fn new(tx: mpsc::Sender<EmulatorResponse>, rx: mpsc::Receiver<EmulatorCommand>, mock_input: Option<mpsc::Receiver<String>>) -> Self {
+        let mut mem = [0u8; MEMORY_LENGTH_NBYTES];
+        Chip8::load_hex_sprites_into_memory(&mut mem);
+
         Chip8 {
             clock_rate_hz: DEFAULT_CPU_CLOCK_RATE_HZ,
             debug_should_exit: false,
             debugrx: rx,
             debugtx: tx,
             delay_timer_value: 0,
-            memory: [0u8; MEMORY_LENGTH_NBYTES],
+            memory: mem,
             registers: RegisterArray::new(),
             pc: PROGRAM_START_BYTE_ADDR,
             index: 0,
@@ -107,6 +128,79 @@ impl Chip8 {
             stack: [0u16; 16],
             user_interface: gui::Gui::new(),
         }
+    }
+
+    /// Loads sprites to represent the hex values "0" through "F" into memory at predefined locations.
+    fn load_hex_sprites_into_memory(memory: &mut [u8]) {
+        // These are the raw sprite values
+        let zero  = vec![0xF0, 0x90, 0x90, 0x90, 0xF0];
+        let one   = vec![0x20, 0x60, 0x20, 0x20, 0x70];
+        let two   = vec![0xF0, 0x10, 0xF0, 0x80, 0xF0];
+        let three = vec![0xF0, 0x10, 0xF0, 0x10, 0xF0];
+        let four  = vec![0x90, 0x90, 0xF0, 0x10, 0x10];
+        let five  = vec![0xF0, 0x80, 0xF0, 0x10, 0xF0];
+        let six   = vec![0xF0, 0x80, 0xF0, 0x90, 0xF0];
+        let seven = vec![0xF0, 0x10, 0x20, 0x40, 0x40];
+        let eight = vec![0xF0, 0x90, 0xF0, 0x90, 0xF0];
+        let nine  = vec![0xF0, 0x90, 0xF0, 0x10, 0xF0];
+        let hexa  = vec![0xF0, 0x90, 0xF0, 0x90, 0x90];
+        let hexb  = vec![0xE0, 0x90, 0xE0, 0x90, 0xE0];
+        let hexc  = vec![0xF0, 0x80, 0x80, 0x80, 0xF0];
+        let hexd  = vec![0xE0, 0x90, 0x90, 0x90, 0xE0];
+        let hexe  = vec![0xF0, 0x80, 0xF0, 0x80, 0xF0];
+        let hexf  = vec![0xF0, 0x80, 0xF0, 0x80, 0x80];
+
+        // These are where the sprites start and end
+        let zerostart  = HEX_SPRITE_ZERO_ADDR as usize;
+        let zeroend    = zerostart + zero.len();
+        let onestart   = HEX_SPRITE_ONE_ADDR as usize;
+        let oneend     = onestart + one.len();
+        let twostart   = HEX_SPRITE_TWO_ADDR as usize;
+        let twoend     = twostart + two.len();
+        let threestart = HEX_SPRITE_THREE_ADDR as usize;
+        let threeend   = threestart + three.len();
+        let fourstart  = HEX_SPRITE_FOUR_ADDR as usize;
+        let fourend    = fourstart + four.len();
+        let fivestart  = HEX_SPRITE_FIVE_ADDR as usize;
+        let fiveend    = fivestart + five.len();
+        let sixstart   = HEX_SPRITE_SIX_ADDR as usize;
+        let sixend     = sixstart + six.len();
+        let sevenstart = HEX_SPRITE_SEVEN_ADDR as usize;
+        let sevenend   = sevenstart + seven.len();
+        let eightstart = HEX_SPRITE_EIGHT_ADDR as usize;
+        let eightend   = eightstart + eight.len();
+        let ninestart  = HEX_SPRITE_NINE_ADDR as usize;
+        let nineend    = ninestart + nine.len();
+        let astart     = HEX_SPRITE_A_ADDR as usize;
+        let aend       = astart + hexa.len();
+        let bstart     = HEX_SPRITE_B_ADDR as usize;
+        let bend       = bstart + hexb.len();
+        let cstart     = HEX_SPRITE_C_ADDR as usize;
+        let cend       = cstart + hexc.len();
+        let dstart     = HEX_SPRITE_D_ADDR as usize;
+        let dend       = dstart + hexd.len();
+        let estart     = HEX_SPRITE_E_ADDR as usize;
+        let eend       = estart + hexe.len();
+        let fstart     = HEX_SPRITE_F_ADDR as usize;
+        let fend       = fstart + hexf.len();
+
+        // Now copy all the sprites into memory at their respective locations
+        memory[zerostart..zeroend].copy_from_slice(&zero);
+        memory[onestart..oneend].copy_from_slice(&one);
+        memory[twostart..twoend].copy_from_slice(&two);
+        memory[threestart..threeend].copy_from_slice(&three);
+        memory[fourstart..fourend].copy_from_slice(&four);
+        memory[fivestart..fiveend].copy_from_slice(&five);
+        memory[sixstart..sixend].copy_from_slice(&six);
+        memory[sevenstart..sevenend].copy_from_slice(&seven);
+        memory[eightstart..eightend].copy_from_slice(&eight);
+        memory[ninestart..nineend].copy_from_slice(&nine);
+        memory[astart..aend].copy_from_slice(&hexa);
+        memory[bstart..bend].copy_from_slice(&hexb);
+        memory[cstart..cend].copy_from_slice(&hexc);
+        memory[dstart..dend].copy_from_slice(&hexd);
+        memory[estart..eend].copy_from_slice(&hexe);
+        memory[fstart..fend].copy_from_slice(&hexf);
     }
 
     /// Attempts to load the given binary into RAM and run it.
