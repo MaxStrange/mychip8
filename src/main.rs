@@ -681,4 +681,61 @@ mod tests {
         // Quit
         exit_and_join(emu, &tx);
     }
+
+    /// Test LDFVx instruction.
+    #[test]
+    fn test_ldfvx() {
+        let (emu, tx, rx, _) = emulate(path::Path::new("testprograms/LDFVx/ldfvxtest.bin"), false);
+
+        // Assert that the I register is the right value for each possible value.
+        assert_iregister(chip8::HEX_SPRITE_ZERO_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after zero addr");
+
+        assert_iregister(chip8::HEX_SPRITE_ONE_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after one addr");
+
+        assert_iregister(chip8::HEX_SPRITE_TWO_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after two addr");
+
+        assert_iregister(chip8::HEX_SPRITE_THREE_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after three addr");
+
+        assert_iregister(chip8::HEX_SPRITE_FOUR_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after four addr");
+
+        assert_iregister(chip8::HEX_SPRITE_FIVE_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after five addr");
+
+        assert_iregister(chip8::HEX_SPRITE_SIX_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after six addr");
+
+        assert_iregister(chip8::HEX_SPRITE_SEVEN_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after seven addr");
+
+        assert_iregister(chip8::HEX_SPRITE_EIGHT_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after eight addr");
+
+        assert_iregister(chip8::HEX_SPRITE_NINE_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after nine addr");
+
+        assert_iregister(chip8::HEX_SPRITE_A_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after A addr");
+
+        assert_iregister(chip8::HEX_SPRITE_B_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after B addr");
+
+        assert_iregister(chip8::HEX_SPRITE_C_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after C addr");
+
+        assert_iregister(chip8::HEX_SPRITE_D_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after D addr");
+
+        assert_iregister(chip8::HEX_SPRITE_E_ADDR, &tx, &rx);
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after E addr");
+
+        assert_iregister(chip8::HEX_SPRITE_F_ADDR, &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
+    }
 }

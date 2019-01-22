@@ -24,22 +24,22 @@ const SOUND_TIMER_CLOCK_RATE_HZ: u64 = 60;
 const DEFAULT_CPU_CLOCK_RATE_HZ: u64 = 1000;
 /// The number of bytes in each of the hexadecimal sprites.
 const BYTES_PER_HEX_SPRITE: u16 = 5;
-const HEX_SPRITE_ZERO_ADDR: u16 = BYTES_PER_HEX_SPRITE * 0;
-const HEX_SPRITE_ONE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 1;
-const HEX_SPRITE_TWO_ADDR: u16 = BYTES_PER_HEX_SPRITE * 2;
-const HEX_SPRITE_THREE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 3;
-const HEX_SPRITE_FOUR_ADDR: u16 = BYTES_PER_HEX_SPRITE * 4;
-const HEX_SPRITE_FIVE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 5;
-const HEX_SPRITE_SIX_ADDR: u16 = BYTES_PER_HEX_SPRITE * 6;
-const HEX_SPRITE_SEVEN_ADDR: u16 = BYTES_PER_HEX_SPRITE * 7;
-const HEX_SPRITE_EIGHT_ADDR: u16 = BYTES_PER_HEX_SPRITE * 8;
-const HEX_SPRITE_NINE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 9;
-const HEX_SPRITE_A_ADDR: u16 = BYTES_PER_HEX_SPRITE * 10;
-const HEX_SPRITE_B_ADDR: u16 = BYTES_PER_HEX_SPRITE * 11;
-const HEX_SPRITE_C_ADDR: u16 = BYTES_PER_HEX_SPRITE * 12;
-const HEX_SPRITE_D_ADDR: u16 = BYTES_PER_HEX_SPRITE * 13;
-const HEX_SPRITE_E_ADDR: u16 = BYTES_PER_HEX_SPRITE * 14;
-const HEX_SPRITE_F_ADDR: u16 = BYTES_PER_HEX_SPRITE * 15;
+pub const HEX_SPRITE_ZERO_ADDR: u16 = BYTES_PER_HEX_SPRITE * 0;
+pub const HEX_SPRITE_ONE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 1;
+pub const HEX_SPRITE_TWO_ADDR: u16 = BYTES_PER_HEX_SPRITE * 2;
+pub const HEX_SPRITE_THREE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 3;
+pub const HEX_SPRITE_FOUR_ADDR: u16 = BYTES_PER_HEX_SPRITE * 4;
+pub const HEX_SPRITE_FIVE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 5;
+pub const HEX_SPRITE_SIX_ADDR: u16 = BYTES_PER_HEX_SPRITE * 6;
+pub const HEX_SPRITE_SEVEN_ADDR: u16 = BYTES_PER_HEX_SPRITE * 7;
+pub const HEX_SPRITE_EIGHT_ADDR: u16 = BYTES_PER_HEX_SPRITE * 8;
+pub const HEX_SPRITE_NINE_ADDR: u16 = BYTES_PER_HEX_SPRITE * 9;
+pub const HEX_SPRITE_A_ADDR: u16 = BYTES_PER_HEX_SPRITE * 10;
+pub const HEX_SPRITE_B_ADDR: u16 = BYTES_PER_HEX_SPRITE * 11;
+pub const HEX_SPRITE_C_ADDR: u16 = BYTES_PER_HEX_SPRITE * 12;
+pub const HEX_SPRITE_D_ADDR: u16 = BYTES_PER_HEX_SPRITE * 13;
+pub const HEX_SPRITE_E_ADDR: u16 = BYTES_PER_HEX_SPRITE * 14;
+pub const HEX_SPRITE_F_ADDR: u16 = BYTES_PER_HEX_SPRITE * 15;
 
 /// In this module, most functions return an EmuResult, which returns either an error message or the number the PC should be incremented by.
 type EmuResult = Result<usize, String>;
@@ -928,14 +928,32 @@ impl Chip8 {
     /// The value of I is set to the location of the hexadecimal sprite
     /// corresponding to the value of Vx.
     fn execute_ldfvx(&mut self, x: Register) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
-        // TODO
+        self.index = match vx {
+            0x00 => HEX_SPRITE_ZERO_ADDR,
+            0x01 => HEX_SPRITE_ONE_ADDR,
+            0x02 => HEX_SPRITE_TWO_ADDR,
+            0x03 => HEX_SPRITE_THREE_ADDR,
+            0x04 => HEX_SPRITE_FOUR_ADDR,
+            0x05 => HEX_SPRITE_FIVE_ADDR,
+            0x06 => HEX_SPRITE_SIX_ADDR,
+            0x07 => HEX_SPRITE_SEVEN_ADDR,
+            0x08 => HEX_SPRITE_EIGHT_ADDR,
+            0x09 => HEX_SPRITE_NINE_ADDR,
+            0x0A => HEX_SPRITE_A_ADDR,
+            0x0B => HEX_SPRITE_B_ADDR,
+            0x0C => HEX_SPRITE_C_ADDR,
+            0x0D => HEX_SPRITE_D_ADDR,
+            0x0E => HEX_SPRITE_E_ADDR,
+            0x0F => HEX_SPRITE_F_ADDR,
+            _ => return Err(format!("Cannot set I to the address of sprite {} because it does not exist. Valid sprites are 0x00 through 0x0F.", vx)),
+        };
 
-        Err("Not yet implemented.".to_string())
+        Ok(2)
     }
 
     /// Executes a BCD LD instruction.
