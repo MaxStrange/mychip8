@@ -669,4 +669,16 @@ mod tests {
         // Quit
         exit_and_join(emu, &tx);
     }
+
+    /// Test ADDIVx instruction.
+    #[test]
+    fn test_addivx() {
+        let (emu, tx, rx, _) = emulate(path::Path::new("testprograms/ADDIVx/addivxtest.bin"), false);
+
+        // Assert that the I register is what we expect
+        assert_iregister(0x20E, &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
+    }
 }
