@@ -171,6 +171,18 @@ mod tests {
         }
     }
 
+    /// Asserts that the slice of memory described by `address` and `nbytes` is equal to `values`, byte-wise.
+    fn assert_memory(address: u16, nbytes: usize, values: &[u8], tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekAddr(address, nbytes), tx, rx) {
+            EmulatorResponse::MemorySlice(bytes) => {
+                for (a, b) in bytes.iter().zip(values) {
+                    assert_eq!(a, b);
+                }
+            },
+            response => panic!("Response {:?} makes no sense...", response),
+        }
+    }
+
     /// SYS is a NOP, so really just test that nothing breaks.
     #[test]
     fn test_sys() {
@@ -734,6 +746,20 @@ mod tests {
         tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume after E addr");
 
         assert_iregister(chip8::HEX_SPRITE_F_ADDR, &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test LDBVx instruction.
+    #[test]
+    fn test_ldbvx() {
+        let (emu, tx, rx, _) = emulate(path::Path::new("testprograms/LDBVx/ldbvxtest.bin"), false);
+
+        // Assert the memory at 0x0321 is what we expect
+        // Assert the memory at 0x0322 is what we expect
+        // Assert the memory at 0x0323 is what we expect
+        assert_memory(0x0321, 3, &[2, 1, 7], &tx, &rx);
 
         // Quit
         exit_and_join(emu, &tx);
