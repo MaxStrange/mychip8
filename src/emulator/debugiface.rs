@@ -15,6 +15,8 @@ pub enum EmulatorCommand {
     PeekPC,
     /// Peek at the given register
     PeekReg(u8),
+    /// Peek at the sound timer's current value.
+    PeekSoundTimer,
     /// Peek at the SP
     PeekSP,
     /// Peek at the whole stack.
@@ -36,6 +38,8 @@ pub enum EmulatorResponse {
     PC(u16),
     /// Returns the contents of a register.
     Reg(u8),
+    /// Returns the current value of the sound timer.
+    SoundTimer(u8),
     /// Returns the current stack pointer.
     SP(u8),
     /// Returns the current stack.

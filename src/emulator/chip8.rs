@@ -231,6 +231,11 @@ impl Chip8 {
                     self.debugtx.send(EmulatorResponse::Stack(self.stack.clone().to_vec())).unwrap();
                 },
 
+                // Peek at the sound timer
+                EmulatorCommand::PeekSoundTimer => {
+                    self.debugtx.send(EmulatorResponse::SoundTimer(self.sound_timer_value)).unwrap();
+                },
+
                 // Break from the BRK loop
                 EmulatorCommand::ResumeExecution => break,
 
@@ -800,14 +805,14 @@ impl Chip8 {
     ///
     /// The sound timer is set to the value of Vx.
     fn execute_ldstvx(&mut self, x: Register) -> EmuResult {
-        let _vx = match self.get_register(x) {
+        let vx = match self.get_register(x) {
             Ok(r) => *r,
             Err(msg) => return Err(msg),
         };
 
-        // TODO
+        self.sound_timer_value = vx;
 
-        Err("Not yet implemented.".to_string())
+        Ok(2)
     }
 
     /// Executes an ADD instruction on I and `x`.

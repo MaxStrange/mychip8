@@ -163,6 +163,14 @@ mod tests {
         }
     }
 
+    /// Asserts that the sound timer is equal to `timer_value`.
+    fn assert_sound_timer(timer_value: u8, tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekSoundTimer, tx, rx) {
+            EmulatorResponse::SoundTimer(received_value) => assert_eq!(received_value, timer_value),
+            response => panic!("Response {:?} makes no sense...", response),
+        }
+    }
+
     /// SYS is a NOP, so really just test that nothing breaks.
     #[test]
     fn test_sys() {
@@ -639,6 +647,24 @@ mod tests {
 
         // Check that the register contains 's'
         assert_register(2, 0x08, &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test LDSTVx instruction.
+    #[test]
+    fn test_ldstvx() {
+        let (emu, tx, rx, _) = emulate(path::Path::new("testprograms/LDSTVx/ldstvxtest.bin"), false);
+
+        // Set the emulator's clock rate while it waits around
+        tx.send(EmulatorCommand::SetClockRate(60)).expect("Could not set clock rate");
+
+        // Continue now that the CPU is the right Hz
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not send resume command");
+
+        // Now let the emulator execute a known number of cycles, then make sure its sound timer is at a known value.
+        assert_sound_timer(0x1E, &tx, &rx);
 
         // Quit
         exit_and_join(emu, &tx);
