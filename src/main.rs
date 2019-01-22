@@ -171,9 +171,9 @@ mod tests {
         }
     }
 
-    /// Asserts that the slice of memory described by `address` and `nbytes` is equal to `values`, byte-wise.
-    fn assert_memory(address: u16, nbytes: usize, values: &[u8], tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
-        match send_and_receive(EmulatorCommand::PeekAddr(address, nbytes), tx, rx) {
+    /// Asserts that the slice of memory at `address` is equal to `values`, byte-wise.
+    fn assert_memory(address: u16, values: &[u8], tx: &mpsc::Sender<EmulatorCommand>, rx: &mpsc::Receiver<EmulatorResponse>) {
+        match send_and_receive(EmulatorCommand::PeekAddr(address, values.len()), tx, rx) {
             EmulatorResponse::MemorySlice(bytes) => {
                 for (a, b) in bytes.iter().zip(values) {
                     assert_eq!(a, b);
@@ -759,7 +759,32 @@ mod tests {
         // Assert the memory at 0x0321 is what we expect
         // Assert the memory at 0x0322 is what we expect
         // Assert the memory at 0x0323 is what we expect
-        assert_memory(0x0321, 3, &[2, 1, 7], &tx, &rx);
+        assert_memory(0x0321, &[2, 1, 7], &tx, &rx);
+
+        // Quit
+        exit_and_join(emu, &tx);
+    }
+
+    /// Test LDIVx and LDVxI instructions.
+    #[test]
+    fn test_ldivx_and_ldvxi() {
+        let (emu, tx, rx, _) = emulate(path::Path::new("testprograms/LDI/lditest.bin"), false);
+
+        // Test that a register currently holds only zeros
+        assert_register(3, 0x00, &tx, &rx);
+
+        // Continue
+        tx.send(EmulatorCommand::ResumeExecution).expect("Could not resume");
+
+        // Test that the memory is correct and that the registers have the values from memory
+        assert_memory(0x334, &[0x04, 0x07, 0x11, 0xAA, 0xBC, 0x00, 0x97], &tx, &rx);
+        assert_register(0, 0x04, &tx, &rx);
+        assert_register(1, 0x07, &tx, &rx);
+        assert_register(2, 0x11, &tx, &rx);
+        assert_register(3, 0xAA, &tx, &rx);
+        assert_register(4, 0xBC, &tx, &rx);
+        assert_register(5, 0x00, &tx, &rx);
+        assert_register(6, 0x97, &tx, &rx);
 
         // Quit
         exit_and_join(emu, &tx);

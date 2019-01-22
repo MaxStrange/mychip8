@@ -74,8 +74,12 @@ pub enum Opcode {
     /// The hundreds digit is I, tens at I+1, then ones at I+2.
     LDBVx(u8),
     /// 0xFx55: Store registers V0 through Vx in memory starting at location I.
+    /// Note that several sources suggest that I should be incremented after this operation, but others disagree.
+    /// I have chosen not to increment I.
     LDIVx(u8),
     /// 0xFx65: Loads registers V0 through Vx with memory starting at location I.
+    /// Note that several sources suggest that I should be incremented after this operation, but others disagree.
+    /// I have chosen not to increment I.
     LDVxI(u8),
 }
 

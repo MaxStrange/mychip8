@@ -1008,7 +1008,7 @@ impl Chip8 {
             return Err(msg);
         }
 
-        for idx in 0..regx_index {
+        for idx in 0..=regx_index {
             let reg = match self.get_register(idx) {
                 Ok(r) => r,
                 Err(e) => {
@@ -1039,7 +1039,7 @@ impl Chip8 {
             return Err(msg);
         }
 
-        for idx in 0..regx_index {
+        for idx in 0..=regx_index {
             let tmp = self.memory[(self.index + idx as u16) as usize];
             let reg = match self.get_register(idx) {
                 Ok(r) => r,
