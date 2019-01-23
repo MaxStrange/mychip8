@@ -1,0 +1,11 @@
+C:\Users\maxst\repos\mychip8\target\debug\deps\libgfx_device_gl-49babf0e5ea0dddd.rlib: C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\lib.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\command.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\factory.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\info.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\shade.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\state.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\tex.rs
+
+C:\Users\maxst\repos\mychip8\target\debug\deps\gfx_device_gl-49babf0e5ea0dddd.d: C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\lib.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\command.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\factory.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\info.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\shade.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\state.rs C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\tex.rs
+
+C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\lib.rs:
+C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\command.rs:
+C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\factory.rs:
+C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\info.rs:
+C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\shade.rs:
+C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\state.rs:
+C:\Users\maxst\.cargo\registry\src\github.com-1ecc6299db9ec823\gfx_device_gl-0.15.4\src\tex.rs:

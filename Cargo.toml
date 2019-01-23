@@ -1,11 +1,6 @@
-[package]
-name = "mychip8"
-version = "0.1.0"
-authors = ["Max Strange <max.strange@synapse.com>"]
-edition = "2018"
+[workspace]
 
-[dependencies]
-clap = "2.32"
-piston_window = "0.85.0"
-rand = "0.6.1"
-rusttype = "0.7.3"
+members = [
+    "chip8",
+    "assembler",
+]
