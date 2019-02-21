@@ -1,7 +1,14 @@
 //! The Chip8 assembler takes one or more assembly files and converts them into object files, which can then be linked.
 
+/* Externs */
 extern crate clap;
 
+/* Mods */
+mod lexer;
+
+/* Uses */
+use std::fs;
+use std::io;
 use std::path;
 use std::process;
 
@@ -41,11 +48,19 @@ fn main() {
 }
 
 /// Assemble the file found at the given path and return an error message if it doesn't work.
-fn assemble_file(_fpath: &path::Path) -> Result<(), String> {
+fn assemble_file(fpath: &path::Path) -> Result<(), String> {
+    /* Lex the file into tokens */
+    let f = match fs::File::open(fpath) {
+        Ok(x) => x,
+        Err(e) => return Err(format!("{:?}", e)),
+    };
+    let stream = io::BufReader::new(f);
+    let _lexdata = lexer::Lexer::lex(stream);
+
     // TODO
-    // Lex the file into tokens
     // Preprocess the tokens using the preprocessor
     // Parse the token stream into an AST
     // Apply recursive descent to the AST to visit each node and generate machine code in an object file output
+
     Ok(())
 }
